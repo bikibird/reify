@@ -2980,12 +2980,12 @@ chute one-way connects bar to foyer.  bar abuts foyer on bottom
 
 	 
 */
-reify.dslRule=reify.Rule().configure({separator:/^\s+|\.|\,/})
+reify.dslTerminal=reify.Rule().configure({separator:/^\s+|\.|\,/})
 reify.dsl={}
-reify.dsl.placeholder=reify.Rule().configure({separator:/^\s*|\.|\,/,regex:/^#[a-zA-Z][\w ]*#/})
-reify.dsl.wildcard=reify.Rule().configure({separator:/^\s*|\.|\,/,regex:/^\_[a-zA-Z][\w ]*\_/})
+reify.dsl.placeholder=reify.Rule(dslTerminal).configure({regex:/^#[a-zA-Z][\w ]*#/})
+reify.dsl.wildcard=reify.Rule(dslTerminal).configure({regex:/^\_[a-zA-Z][\w ]*\_/})
 reify.dsl.nounPhrase=reify.Rule()
-	.snip("article").snip("adjectives").snip("noun")
+	.snip("article",dslTerminal).snip("adjectives",dslTerminal).snip("noun",dslTerminal)
 
 reify.dsl.nounPhrase.configure({semantics:interpretation=>
 {
@@ -2996,13 +2996,13 @@ reify.dsl.nounPhrase.configure({semantics:interpretation=>
 
 	return true
 }})
-reify.dsl.nounPhrase.article.configure({separator:/^\s*|\.|\,/,minimum:0,filter:(definition)=>definition?.part==="article"})
-reify.dsl.nounPhrase.adjectives.configure({separator:/^\s*|\.|\,/,minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
+reify.dsl.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})
+reify.dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
 reify.dsl.nounPhrase.noun.configure({mode:reify.Rule.apt})
 	.snip(0)
 	.snip(1,reify.dsl.placeholder)
 	.snip(2,reify.dsl.wildcard)
-reify.dsl.nounPhrase.noun[0].configure({separator:/^\s*|\.|\,/,filter:(definition)=>definition?.part==="noun",})	
+reify.dsl.nounPhrase.noun[0].configure({filter:(definition)=>definition?.part==="noun",})	
 
 reify.dsl.argument=reify.Rule().configure({mode:reify.Rule.apt,semantics:interpretation=>
 {
