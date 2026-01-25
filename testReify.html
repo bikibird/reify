@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+        <p>test reify</p>
+       
+       <script src="../src/reify.js"></script>
+       <script src="../src/en-us.js"></script>
+       <script>
+        const { noun, adjective, $:net, predicate, facts, select } = reify
+        const _=reify.template._
+        noun`direction`.direction(true)
+        noun`north`.kind`direction`
+        noun`place`.place(true)
+        noun`room`.kind`place`.room(true)
+        noun`portal`.portal(true)
+        noun`bar door`.kind`portal`
+        
+        noun`player`.height(72)
+        noun`nancy`
+        noun`ring`
+
+
+        noun`foyer`.name`Foyer of the Opera House`.aka`entryway`
+            .kind`room`
+            .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
+
+        predicate`give to`.passive`give to by`
+
+        predicate`carry`.passive`carry by`
+        predicate`wear`.passive`worn by`
+
+        adjective`shiny,dull`.describes`surface` 
+
+        facts`player carries  ring.`
+        //facts`player wears carried ring.` // The carried ring is not carried by player. `
+       
+
+       // console.log(select`player carries _things_.`.now`nancy carries [things].`)
+
+
+            
+       /* adjective`locked`.opposite`unlocked`.describes`security`  // boolean adjective
+        adjective`masculine,feminine,epicene,neuter`.describes`pronouns`
+        adjective`dark,dim,bright`.describes`lighting`  // enum
+        
+
+        //predicate`connect to on`.adverb`one-way`.passive`connect by`
+
+        Predicate`give to`.passive`give to by`
+
+        Predicate`carry`.passive`carry by`
+        
+
+        ishml.reify`the tall player carries ring.`
+        ishml.reify`#Charlotte# carries the #diamond#.`
+       //Wildcards may be used in select statements, but not reify statements.
+      var carried_things= ishml.select`player carries _thing_.`
+      console.log(carried_things)
+       //ishml.select`player carries green _thing_.`.select`[thing] belongs Nancy` //not implemented
+       //ishml.select`player carries green _thing_ which belongs to nancy.
+       //ishml.select`player carries green _thing_.`.now`The [thing] is glowing.`
+       //ishml.select`person _carrier_ carries green _thing_.`.now`The [thing] is glowing. The [carrier] is weak.`
+       // appositives are kinds and filters the nouns
+       //ishml.select`person _carrier_ carries green _thing_, a food.`.now`The [thing] is glowing. The [carrier] is weak.`
+      
+
+        //select returns a reality containing facts.  Additional facts may be reified from a reality.  the wildcards from the select
+        //are available as placeholders for the reify.
+
+        //ishml.select`_person_ carries diamond.`.reify`[person] carries scissors.`
+        //ishml.select`_person_ carries diamond.`.now`[person] does not carry scissors.`
+        //Provide alternative/additional narrative that the plot may or may not use.
+        //ishml.select`_person_ carries diamond.`.now`[person] does not carry scissors.`_`people who carry diamonds do not carry scissors.`
+
+ 
+        //ishml.reify`the tall player carries ring.`
+    
+        //ishml.reify`An exit connects The foyer to the bar on the north.`
+        //ishml.reify`The foyer is connected by the exit on the north to the bar.`
+    */
+
+/*$.place.cloakroom
+	.configure({
+		name:"Cloakroom",
+		description:`The walls of this small room were clearly once lined with hooks, though now only one remains.
+			The exit is a door to the east.`
+	})
+	.singular("cloakroom")
+
+$.place.bar	
+	
+	.configure({
+		name:"Bar",
+		description:`The bar, much rougher than you'd have guessed after the opulence of the foyer to the north, is completely empty. There seems to be some sort of message scrawled in the sawdust on the floor.`
+	}) 
+	.singular("bar")*/
+
+
+       </script>
+    </body>
+</html>
