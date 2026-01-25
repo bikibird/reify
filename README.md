@@ -3,4 +3,4 @@ Reify is a system for creating web-based works of interactive fiction (text adve
 
 Reify features a semantic network, an event driven plot management system, and a dynamic text generation system.  
 
-Reify is currently under development.  An alpha version is scheduled to be released in April.
+Reify is currently under development.  An alpha version is scheduled to be released April 2026.
