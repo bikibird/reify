@@ -2,10 +2,13 @@
 2. Templating system (Done)
 3. Semantic network
 5. Event Generation(User input and Episodes)
-5. Event Handling (plot queue)
-6. Colossal.js (starter pack)
-
--------3. Semantic network-------
+5. Event Handling (scenes)
+6. world.js and plot.js (starter pack)
+-------1. CFG Parser ------------
+    Added boundary character matching which work like separators, but aren't consumed. To do: Document it.
+-------2. Templating ------------
+    To do: In addition to output to text and html element, add output to fact, now, and scene for more dynamic story options.
+-------3. Semantic network ------
 
 https://en.wikipedia.org/wiki/Semantic_network
 
@@ -79,16 +82,15 @@ The semantic network is queried using a select statement, which returns a set of
 ```javaScript
 reify.select`_person_ carries ring.` 
 reify.select`talkative _person_ carries shiny ring.` //adjectives restrict
-reify .select`_person_,a person, who carries ring, eats pizza that is cold.` //postpostive phrases also restrict.
+reify .select`_person_,a person, who carries ring and who eats pizza that is cold.` // restrictive clauses begin with who or that.
 ```
 
 
 
 
 `
-"that" indicates a restrictive clause on the prior clause correlated on noun1. "which" indicates a restriction of the prior clause on noun2. 
-
-facts=$.select`who is person that lives_in apartment that owns something which is pet that runs free that answers_to fido that lost collar.`
+"that" and "who" indicates a restrictive clause on the prior noun.
+select`a person, _stranger_, who lives in the apartment and who owns a pet _animal_ (that runs free or that is carried by alice) and that lost a collar.`
 
 
 
@@ -122,7 +124,7 @@ reify
     
     //a noun intended as a kind will often have attributes associated with it that need to be defined as adjectives.  
 
-    
+    // to
 
 
 .check`room contains tall female _NPC_.`
@@ -637,18 +639,31 @@ Changing a noun's property generates a reality from a reify of the form `theNoun
 For pure choice based fiction that does not do a lot of tracking of the world state, it may be inconvenient to create nouns and predicate just to match a scene. It is possible to link a scene directly by declaring the scene with a handle using @, for example reify.scene`@exciting denouement`  The scene may then be called directly with reify.tell`exciting denouement`.
 
 
-reify.scene`The player will go north.`unfolding((reality)=>).``
-reify.scene`The player is ill.`.unfolding(()=>)  // copula applies ill adjective to player's health for match
+reify.scene`The player will go north.`action((reality)=>)
+reify.scene`The player is ill.`.actiong(()=>)  // copula applies ill adjective to player's health for match
 
 reify.plot={} //members are scenes.
 
-reify.scene`select statement`.unfolding((reality)=>{})._`` // adds a scene to the plot. It includes a select statement to match to a reality, an unfolding function and a narration.
+reify.scene`select statement`.action((reality)=>{})._`` // adds a scene to the plot. It includes a select statement to match to a reality, an action function and a narration.
 
 
-reify.scene`___ tries going`.unfolding((reality)=>{//update world model})._`narrative`
+reify.scene`___ tries going`.action((reality)=>{//update world model})._`narrative`
 
 scene`statement` is parsed as a reify select statement and then compared to the incoming reality from now.
 scene`@handle` matches handle provided by reify.tell`handle`
+
+All nouns and predicates must be defined before scenes are defined because scenes are indexed in the nouns
+
+reify.scene`_person_ takes shiny ring.` //The scene is indexed in ring.
+reify.scene`player takes shiny ring.` //The scene is indexed in both player and ring.
+reify.scene`@player takes shiny ring.` //handle scenes are indexed in the plot only for choice based fiction.
+
+
+Within the action, calling this.unfold() will call the scene that applies but is less specific to the situation. It works like bubbling events in javascript
+
+
+
+
 
 
 

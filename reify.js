@@ -91,6 +91,7 @@ reify.regex=reify.regex||{}
 reify.regex.floatingPointNumber=/^-?([0-9]*[.])?[0-9]+/
 reify.regex.whitespace=/^\s+/
 reify.regex.word=/^\w*/
+
 // #endregion
 // #region Factories and Classes
 // #region Interpretation 
@@ -207,7 +208,7 @@ reify.Lexicon.prototype.register = function (...someLexemes)
 	return {as:_as.bind(this)}	
 }
 
-reify.Lexicon.prototype.search = function (searchText, {regex=false,separator=/^\s+/, caseSensitive=false, full=false, longest=false, lax=false}={}) 
+reify.Lexicon.prototype.search = function (searchText, {regex=false,separator=/^\s+/, boundary,caseSensitive=false, full=false, longest=false, lax=false}={}) 
 {
 	var _trie = this.trie
 	var _results = []
@@ -284,10 +285,15 @@ reify.Lexicon.prototype.search = function (searchText, {regex=false,separator=/^
 								}
 								else 
 								{ 
-									if (lax)
+									if (lax)  //don't care if there isn't a separator or boundary
 									{
 										_results.unshift(result)
 									}
+                                    else
+                                    {
+                                        let bound=result.remainder.match(boundary)
+                                        if (bound !== null) _results.unshift(result)
+                                    }
 								}
 							}
 							else
@@ -409,16 +415,18 @@ reify.narrative=function narrative(literals, ...expressions)
 }
 // #endregion
 // #region Parser
-reify.Parser=function Parser({lexicon,grammar}={})
+reify.Parser=function Parser({lexicon,grammar,separator,boundary}={})
 {
 	if (this instanceof reify.Parser)
 	{
 		this.lexicon=lexicon
 		this.grammar=grammar
+        this.separator=separator
 	}
 	else
 	{
-		return new Parser({lexicon:lexicon,grammar:grammar})
+		//return new Parser({lexicon:lexicon,grammar:grammar,separator:separator})
+        return new Parser({lexicon:lexicon,grammar:grammar,separator:separator,boundary:boundary})
 	}
 }
 reify.Parser.prototype.analyze=function(text)
@@ -426,7 +434,7 @@ reify.Parser.prototype.analyze=function(text)
 	var interpretations=[]
 	var partialInterpretations=[]
 	var completeInterpretations=[]
-	var {snippets:result}=this.grammar.parse(text,this.lexicon)
+	var {snippets:result}=this.grammar.parse(text,this.lexicon, this.separator, this.boundary)
 	if (result)
 	{
 		interpretations=interpretations.concat(result)
@@ -482,7 +490,8 @@ reify.Rule=function Rule()
 		Object.defineProperty(this, "prefer", {value:false, writable: true})
 		Object.defineProperty(this, "semantics", {value:(interpretation)=>true, writable: true})
 		Object.defineProperty(this, "mismatch", {value:(interpretation)=>false, writable: true})
-		Object.defineProperty(this, "separator", {value:/^\s/, writable: true})
+		Object.defineProperty(this, "separator", {value:null, writable: true})
+        Object.defineProperty(this, "boundary", {value:null, writable: true})
 		Object.defineProperty(this, "regex", {value:false, writable: true})
 
 		return this
@@ -501,7 +510,7 @@ reify.Rule.prototype.clone =function()
 
 	function _clone(rule)
 	{
-		var clonedRule= new reify.Rule().configure({caseSensitive:rule.caseSensitive, entire:rule.entire, filter:rule.filter, full:rule.full, greedy:rule.greedy, keep:rule.keep,longest:rule.lax,longest:rule.longest, minimum:rule.minimum, maximum:rule.maximum, mode:rule.mode, mismatch:rule.mismatch, prefer:rule.prefer, regex:rule.regex, semantics:rule.semantics, separator:rule.separator})
+		var clonedRule= new reify.Rule().configure({caseSensitive:rule.caseSensitive, entire:rule.entire, filter:rule.filter, full:rule.full, greedy:rule.greedy, keep:rule.keep,longest:rule.lax,longest:rule.longest, minimum:rule.minimum, maximum:rule.maximum, mode:rule.mode, mismatch:rule.mismatch, prefer:rule.prefer, regex:rule.regex, semantics:rule.semantics, separator:rule.separator, boundary:rule.boundary})
 		var entries=Object.entries(rule)
 		entries.forEach(([key,value])=>
 		{
@@ -520,7 +529,7 @@ reify.Rule.prototype.clone =function()
 	}	
 	return _clone(this)
 }	
-reify.Rule.prototype.configure =function({caseSensitive, entire, filter, full, greedy, keep, longest, lax, minimum,maximum, mode,mismatch,prefer, regex, semantics, separator}={})
+reify.Rule.prototype.configure =function({caseSensitive, entire, filter, full, greedy, keep, longest, lax, minimum,maximum, mode,mismatch,prefer, regex, semantics, separator,boundary}={})
 {
 
 	if(caseSensitive !== undefined){this.caseSensitive=caseSensitive}
@@ -539,9 +548,10 @@ reify.Rule.prototype.configure =function({caseSensitive, entire, filter, full, g
 	if(regex !== undefined){this.regex=regex}
 	if(semantics !== undefined){this.semantics=semantics}
 	if(separator !== undefined){this.separator=separator}
+    if(boundary !== undefined){this.boundary=boundary}
 	return this
 }
-reify.Rule.prototype.parse =function(text,lexicon)
+reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 {
 	var someText=text.slice(0)
 	var results=[]
@@ -568,7 +578,7 @@ reify.Rule.prototype.parse =function(text,lexicon)
 							if (remainder.length>0)
 							{
 
-								var {snippets}=this[key].parse(remainder.slice(0),lexicon) 
+								var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
 								snippets.forEach((snippet)=>
 								{
 									var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
@@ -638,7 +648,7 @@ reify.Rule.prototype.parse =function(text,lexicon)
 							//SNIP
 								if (remainder.length>0)
 								{
-									var {snippets}=this[key].parse(remainder.slice(0),lexicon) 
+									var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
 									snippets.forEach((snippet)=>
 									{
 										var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
@@ -695,7 +705,7 @@ reify.Rule.prototype.parse =function(text,lexicon)
 							//SNIP
 							if (remainder.length>0)
 							{
-								var {snippets}=this[key].parse(remainder.slice(0),lexicon) 
+								var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
 								snippets.forEach((snippet)=>
 								{
 									var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
@@ -761,7 +771,7 @@ reify.Rule.prototype.parse =function(text,lexicon)
 				//SNIP
 				if (remainder.length>0)
 				{
-					var snippets=lexicon.search(remainder, {regex:rule.regex,separator:rule.separator, caseSensitive:rule.caseSensitive, longest:rule.longest, full:rule.full, lax:rule.lax})
+					var snippets=lexicon.search(remainder, {regex:rule.regex,separator:rule.separator??separator??/^\s+/, boundary:rule.boundary??boundary,caseSensitive:rule.caseSensitive, longest:rule.longest, full:rule.full, lax:rule.lax})
 
 					snippets.forEach((snippet)=>
 					{
@@ -2700,9 +2710,11 @@ reify.noun=new Proxy
 	{
 		constructor(literals, ...expressions) // maybe template literal notation or function notation
 		{
+            
 			Object.defineProperty(this, "id",{value:reify.formatId(reify.toString(literals, ...expressions)),enumerable:false})
 			Object.defineProperty(this, "description",{value:reify.template._,enumerable:false,writable:true})
 			Object.defineProperty(this, "name",{value:reify.formatName(this.id),enumerable:false,writable:true})
+            Object.defineProperty(this, "attributive",{value:false,enumerable:false,writable:true})
             Object.defineProperty(this, "_indexes",{value:[],enumerable:false,writable:true})
 			let noun=new Proxy(this,reify.proxies.noun)
 			reify.net[this.id]=noun
@@ -2711,18 +2723,29 @@ reify.noun=new Proxy
 		}
 		aka(literals, ...expressions)
 		{
-			reify.glossary.register(reify.formatName(reify.toString(literals, ...expressions))).as({part: "noun", key:this.id})	
+			reify.glossary.register(reify.formatName(literals, ...expressions)).as({part: "noun", key:this.id})	
 			return this
 		}
 		kind(literals, ...expressions)
 		{
-			let kind=reify.net[reify.formatName(literals, ...expressions)]
+			let kind=reify.net[reify.formatId(literals, ...expressions)]
+            
 			if (kind)
 			{
 				Object.keys(kind).forEach((key)=>
 				{
 					this[key]=kind[key]()
 				})
+
+                //to do: kinds need to go into the lexicon with a part=attributive
+                if (!kind.attributive)
+                {
+                    kind.attributive=true
+                    reify.glossary.register(kind.name).as({part: "attributive", key:kind})	
+
+                }
+
+
 			}
 			else throw new Error("ERROR 0002: Unable to assign kind ${kind} to ${this.id}.")
 			return this
@@ -2947,27 +2970,18 @@ reify.Reality=new Proxy
 // #region dsl
 
 
-/* EBNF:
-	dsl=>facts
-	facts=>fact"."+
-	fact=>subject predicate
-	subject=>"("fact")"|nounPhrase
-	predicate=>verb verbComplement
-	verbComplement=>target prepositionalPhrase*
-	target=>"("fact")"|nounPhrase
-	prepositionalPhrase=>preposition complement
-	complement=>"("fact")"|nounPhrase
-	nounPhrase=>[article] adjectives* noun
-	noun=>lexiconNoun|placeholder
-	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
-	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+/* 
 
-TO Do: 
-    nounPhrase=>[article]adjectives* noun[,appositive]*
 
 
 Test:
-
+player carries ring that is owned by smeagle.
+player carries ring that is owned by smeagle and that is liked by sarah.
+a rich person, _the_ring_bearer_, carries the ring that is owned by _someone_.
+_the_ring_bearer_ carries the ring that is owned by _someone_.  //acceptable but wordy
+_the_ring_bearer_ carries the owned ring.  //more concise
+_the_ring_bearer_, a person, carries the ring. 
+_the_ring_bearer_, a person, carries an _item_ of jewelry .
 
 A wildcard is used for matching in select statements.  A #placeholder# is used for creating nouns on the fly.
 
@@ -2977,96 +2991,303 @@ magic portal one-way connects bar to foyer on north. -- one-way adverb suppresse
 twisty passage one-way connects bar to foyer on north. twisty passage one-way connects foyer to bar on east.  --two-way connection without reciprocity and abuttal.
 chute one-way connects bar to foyer.  bar abuts foyer on bottom
 
+to do: do we need conditionals or is filter enough? Scenes are if statements maybe just need to AND to coordinating facts?
+to do: should facts be added to the lexicon? part=fact
 
-	 
+
+logic:
+
+exp→term {OR term};
+
+term→factor {AND factor};
+
+factor→id;
+
+factor→NOT factor;
+
+factor→LPAREN exp RPAREN;
+
+Left recursion, A=>Aa|b, is equivalent to right recursive
+
+A=>Aa|b //left recursive 
+
+//right recursive
+A=>b C? 
+C=>a C 
+
+subject =>  subject predicate | nounPhrase // left recursive
+
+subject => nounPhrase f
+f =>
+
+subject => nounPhrase subjectPrime
+subjectPrime =>predicate subjectPrime?
+
+
+
+
+
+
+
+EBNF:
+    statements=>statement+
+	statement=>statement period
+    statement=>subject predicate 
+	subject=>statement|nounPhrase
+	predicate=>verb directObject prepositionalPhrase*
+    prepositionalPhrase=>preposition target
+    directObject=>statement|nounPhrase
+    target=>statement|nounPhrase
+    nounPhrase=>article? adjectives* noun restriction
+    restriction=>appositive|relative|appositive comma relative
+    appositive=>comma article? noun
+    relative=>relativizer predicate
+	noun=>lexiconNoun|wildcard|placeholder
+	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    period=/^\./
+    comma=/^\,/
+
+EBNF:
+    statements=>statement+
+	statement=>statement period
+    statement=>subject predicate 
+	subject=>nounClause
+   
+	predicate=>verb directObject prepositionalPhrase*
+    prepositionalPhrase=>preposition target
+    directObject=>nounClause
+    target=>nounClause
+    nounClause=>nounPhrase gerundPhrase?
+    gerundPhrase=>gerund directObject prepositionalPhrase*
+    nounPhrase=>article? adjectives* attributive? noun relativeClause*
+    relativeClause=>relativizer predicate
+	noun=>lexiconNoun|wildcard|placeholder
+	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    period=/^\./
+
+
+Tests:
+
+player carries ring. 
+
+player carries ring that is owned by smeagle.
+    subject predicate
+    nounPhrase(player) verb(carries) directObject(ring that is owned by smeagle)
+    nounPhrase(player) verb(carries) nounPhrase(ring that is owned by smeagle)
+    nounPhrase(ring that is owned by smeagle)=>noun(ring) relativize(that) predicate(is owned by smeagle)
+
+
+player carries ring that is owned by smeagle and that is liked by sarah.
+    to do: logic parser
+
+a rich person, _the_ring_bearer_, carries the ring that is owned by _someone_.
+    article(a) adjective (rich) adjective(person) noun(_the_ring_bearer), verb(carries) nounPhrase(ring that is owned by smeagle)
+
+_the_ring_bearer_ carries the ring that is owned by _someone_.  //acceptable but wordy.  Makes [someone] available for use.
+_the_ring_bearer_ carries the owned ring.  //more concise
+
+
+
+Bob carries the ring.
+    subject=>nounPhrase
+    nounPhrase=>article? adjectives* noun
+
+Alice knows bob carries the ring.
+    object=>nounClause
+    nounClause=>nounPhrase predicate
+
+Bob carrying the ring endangers Charles.
+    subject=>gerundPhrase
+    gerundPhrase=>nounPhrase gerund gerundComplement
+
+
+Bob carrying the ring compromises Della working on the project. 
+subject=>gerundPhrase
+object=>gerundPhrase
+
+
+_someone_, who is a person and who wears a hat, carrying the ring endangers Charles.
+    matches fact: (Bob~carries~ring)~endangers~charles
+_someone_ who is a person and who wears a hat and who carries the ring endangers Charles.
+    matches fact: Bob~endangers~charles
+
+
+
+EBNF:
+    statements=>statement+
+	statement=>statement period
+    statement=>subject predicate 
+	subject=>nounClause
+   
+	predicate=>verb directObject prepositionalPhrase*
+    prepositionalPhrase=>preposition target
+    directObject=>nounClause
+    target=>nounClause
+    nounClause=>nounPhrase gerundPhrase?
+    gerundPhrase=>gerund directObject prepositionalPhrase*
+    nounPhrase=>article? adjectives* attributive? noun relativeClause*
+    relativeClause=>relativizer predicate
+	noun=>lexiconNoun|wildcard|placeholder
+	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    period=/^\./
 */
-reify.dslTerminal=reify.Rule().configure({separator:/^\s+|\.|\,/})
+
 reify.dsl={}
-reify.dsl.placeholder=reify.Rule(dslTerminal).configure({regex:/^#[a-zA-Z][\w ]*#/})
-reify.dsl.wildcard=reify.Rule(dslTerminal).configure({regex:/^\_[a-zA-Z][\w ]*\_/})
-reify.dsl.nounPhrase=reify.Rule()
-	.snip("article",dslTerminal).snip("adjectives",dslTerminal).snip("noun",dslTerminal)
-
-reify.dsl.nounPhrase.configure({semantics:interpretation=>
-{
-	const definition=interpretation.gist.noun.definition
-	const key=definition.key??definition.match
-	const adjectives=interpretation.gist.adjectives?.map(adjective=>adjective.definition) ?? []//.forEach(adjective=>reify.net[key]?.[adjective.property]()===adjective.value)
-	interpretation.gist={adjectives:adjectives, noun:key}
-
-	return true
-}})
-reify.dsl.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})
-reify.dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
-reify.dsl.nounPhrase.noun.configure({mode:reify.Rule.apt})
+let dsl=reify.dsl
+dsl.article=reify.Rule().configure({minimum:0,filter:(definition)=>definition?.part==="article"})
+dsl.statement=reify.Rule()
+dsl.noun=reify.Rule().configure({mode:reify.Rule.apt})
 	.snip(0)
 	.snip(1,reify.dsl.placeholder)
 	.snip(2,reify.dsl.wildcard)
-reify.dsl.nounPhrase.noun[0].configure({filter:(definition)=>definition?.part==="noun",})	
+dsl.noun[0]
+    .configure({filter:(definition)=>definition?.part==="noun"})	
+dsl.nounPhrase=reify.Rule()
+dsl.placeholder=reify.Rule().configure({regex:/^#[a-zA-Z][\w ]*#/})
+dsl.predicate=reify.Rule()
+dsl.wildcard=reify.Rule().configure({regex:/^\_[a-zA-Z][\w ]*\_/})
 
-reify.dsl.argument=reify.Rule().configure({mode:reify.Rule.apt,semantics:interpretation=>
+dsl.statements=reify.Rule()
+    .snip("statement",reify.dsl.statement).snip("period")
+    .configure({maximum:Infinity, semantics:interpretation=>
+    {
+        interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
+        return true
+    }})
+
+    
+
+dsl.statement
+    .snip("subject").snip("predicate",reify.dsl.predicate)
+    .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
+    {
+        let verb=interpretation.gist.predicate.verb.definition
+        let argumentList=[]
+
+        argumentList.push({key:"subject", value:interpretation.gist.subject},{key:verb.predicate.verb,value:interpretation.gist.predicate.directObject})
+        interpretation.gist.predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({key:phrase.preposition.definition.key,value:phrase.target}))
+
+        interpretation.gist={predicate:verb.predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
+        return true
+
+    }})
+
+dsl.statement.subject
+    .snip(0,reify.dsl.nounPhrase)
+    .snip(1,reify.dsl.statement)
+    .configure({mode:reify.Rule.apt})    
+
+dsl.statements.period.configure({regex:/^\./})
+
+dsl.nounPhrase
+    .snip("article",reify.dsl.article).snip("adjectives").snip("noun",reify.dsl.noun)//.snip("restriction") 
+    .configure({semantics:interpretation=>
+    {
+        const definition=interpretation.gist.noun.definition
+        const key=definition.key??definition.match
+        const adjectives=interpretation.gist.adjectives?.map(adjective=>adjective.definition) ?? []//.forEach(adjective=>reify.net[key]?.[adjective.property]()===adjective.value)
+        interpretation.gist={adjectives:adjectives, noun:key}
+
+        return true
+    }})
+dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
+dsl.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
+
+
+
+
+/*dsl.nounPhrase.restriction
+    .snip(0) //appositive
+	.snip(1) //relative
+	.snip(2) //appositive + relative
+
+dsl.nounPhrase.restriction[0]
+    .snip("comma",reify.dsl.comma).snip("article",reify.dsl.article).snip("noun",reify.dsl.noun)
+dsl.nounPhrase.restriction[1]
+    .snip("relativizer",reify.dsl.relativizer).snip("predicate",reify.dsl.predicate)
+dsl.nounPhrase.restriction[2]
+    .snip("comma",reify.dsl.comma).snip("article",reify.dsl.article).snip("noun",reify.dsl.noun).snip("comma",reify.dsl.comma) .snip("restrictive",reify.dsl.relativizer).snip("predicate",reify.dsl.predicate)
+*/
+
+dsl.predicate.snip("verb").snip("directObject",dsl.statement.subject).snip("prepositionalPhrases")
+
+dsl.predicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
+
+dsl.predicate.prepositionalPhrases.configure({minimum:0,maximum:Infinity,greedy:true})
+	.snip("preposition").snip("target",dsl.statement.subject)
+
+dsl.predicate.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
+
+
+
+
+reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/[\s\,]+/ })
+
+
+reify.select=function(literals, ...expressions)
 {
-	let gist=interpretation.gist
-	return true
-
-}})
-.snip(0)
-.snip(1,reify.dsl.nounPhrase)
-
-reify.dsl.argument[0].snip("(").snip("statement",reify.dsl.statement).snip(")")
-reify.dsl.argument[0]["("].configure({regex:/^\(/})
-reify.dsl.argument[0][")"].configure({regex:/^\)/})
-
-reify.dsl.statement=reify.Rule().configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
-{
-	let verb=interpretation.gist.predicate.verb.definition
-	let argumentList=[]
+	var source=reify.toString(literals, ...expressions)
 	
-	argumentList.push({key:"subject", value:interpretation.gist.subject},{key:verb.predicate.verb,value:interpretation.gist.predicate.directObject})
-	interpretation.gist.predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({key:phrase.preposition.definition.key,value:phrase.target}))
-	
-	interpretation.gist={predicate:verb.predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
-	return true
+	let {success,interpretations}=reify.dslParser.analyze(source)
+	if (success)
+	{
+		
+		if (interpretations.length==0)
+		{
+			throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
+		} 
+		else if (interpretations.length>1) 
+		{
+			throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
+		}
+		else
+		{
+            const reality=new reify.Reality()
+            const placeholder={}
+            const statement=interpretations[0].gist[0]
+            const predicate=statement.predicate
+            //statements maybe in active or passive voice, but facts are always in active voice.
+            if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
+            statement.voice===reify.lang.active
+            statement.arguments.forEach((argument,index)=>
+            {
+                const noun=argument.value.noun
+                if (noun.startsWith("_")) Object.assign(reality.placeholder,{[noun.slice(1,-1 )]:{index:index,noun:true}})
+                else
+                {
+                    //get facts associated with noun._index[index] if reality is empty, add otherwise filter
+                    if (reality.isEmpty) reality.add(reify.net[noun]._indexes[index])
+                    else reality.filter(reify.net[noun]._indexes[index])
+                }
+            })
 
-}})
-.snip("subject",reify.dsl.argument).snip("predicate")
+            // apply predicate to reality
+            if (predicate instanceof reify.classes.Predicate) predicate.select(reality)
+            else if (predicate) placeholder[predicate.slice(1,-1 )]={predicate:true}
 
+            // apply adjectives
+            reality.forEach(fact=>
+            {
+                statement.arguments.forEach((argument,index)=>argument.value.adjectives.forEach(adjective=>
+                {
+                    if (adjective.value(fact.nouns[index])===false) reality.subtract(fact)
+                }))
 
+            })
+            return reality
+		}
+	}
+	else
+	{
+		console.log(interpretations)
+		throw new Error("ERROR 0005: Unable to parse reify source code.")
 
-reify.dsl.statement.subject.configure({semantics:interpretation=>
-{
-	let gist=interpretation.gist
-	return true
-}})
+	}
 
-
-reify.dsl.statement.predicate.configure({semantics:interpretation=>
-{
-	let gist=interpretation.gist
-	return true
-
-}})
-
-reify.dsl.statement.predicate	
-.snip("verb").snip("directObject",reify.dsl.argument).snip("prepositionalPhrases")
-
-
-reify.dsl.statement.predicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
-
-reify.dsl.statement.predicate.prepositionalPhrases.configure({minimum:0,maximum:Infinity,greedy:true})
-	.snip("preposition").snip("target",reify.dsl.argument)
-
-reify.dsl.statement.predicate.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
-
-
-reify.dsl.statements=reify.Rule().configure({maximum:Infinity, semantics:interpretation=>
-{
-	interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
-	return true
-}})
-.snip("statement",reify.dsl.statement).snip("period")
-
-reify.dsl.statements.period.configure({regex:/^\./ })
+}
 
 reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements})
 

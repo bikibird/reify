@@ -5,18 +5,22 @@
     <body>
         <p>test reify</p>
        
-       <script src="../src/reify.js"></script>
-       <script src="../src/en-us.js"></script>
+       <script src="reify.js"></script>
+       <script src="en-us.js"></script>
        <script>
         const { noun, adjective, $:net, predicate, facts, select } = reify
         const _=reify.template._
+        adjective`shiny,dull`.describes`surface` 
         noun`direction`.direction(true)
         noun`north`.kind`direction`
         noun`place`.place(true)
         noun`room`.kind`place`.room(true)
+        
         noun`portal`.portal(true)
         noun`bar door`.kind`portal`
         
+        noun`person`.person(true)
+
         noun`player`.height(72)
         noun`nancy`
         noun`ring`
@@ -31,9 +35,13 @@
         predicate`carry`.passive`carry by`
         predicate`wear`.passive`worn by`
 
-        adjective`shiny,dull`.describes`surface` 
+        
 
-        facts`player carries  ring.`
+        facts`player carries ring.`
+
+      //  reify.select`_ring_bearer_, a person, carries ring.`
+
+
         //facts`player wears carried ring.` // The carried ring is not carried by player. `
        
 

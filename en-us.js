@@ -2,48 +2,9 @@
 // #region glossary
 reify.glossary
 	.register("the", "a", "an","some").as({ part: "article" })
-/*
+    .register("that", "who").as({ part: "relativizer" })
 
-
-
-   //adjectives
-    .register("all").as({part:"adjective",select:()=>$.thing})
-	
-    //articles
-    .register("the", "a", "an","some").as({ part: "article" })
-
-    //conjunctions
-    .register("and",",").as({ part: "conjunction" })
-
-    //particles
-	.register("off").as({ select: "up", part: "particle" })
-    .register("up").as({ select: "up", part: "particle" })
-
-    //prepositions
-    .register("from").as({ select: "from", part: "preposition" })
-    .register("in").as({ select: "in", part: "preposition" })
-    .register("to").as({ select: "to", part: "preposition" })
-    
-    //relations
-    .register("in", "inside","inside of").as({cord: "in", part:"relation"})
-    .register("under", "underneath","below").as({cord: "under", part:"relation"})
-    .register("on", "on top of").as({cord: "on", part:"relation"})
-    .register("next to", "beside").as({cord: "beside", part:"relation"})
-
-	//directions
-	.register("north","n").as({part: "noun",  select:subject=>subject.in.exit.north.cord})
-    .register("south","s").as({part: "noun",  select:subject=>subject.in.exit.south.cord})
-    .register("east","e").as({part: "noun",  select:subject=>subject.in.exit.east.cord})
-    .register("west","w").as({part: "noun",  select:subject=>subject.in.exit.west.cord})
-    .register("northeast","ne").as({part: "noun",  select:subject=>subject.in.exit.northeast.cord})
-    .register("northwest","nw").as({part: "noun",  select:subject=>subject.in.exit.northwest.cord})
-    .register("southeast","se").as({part: "noun",  select:subject=>subject.in.exit.southeast.cord})
-    .register("west","w").as({part: "noun",  select:subject=>subject.in.exit.southwest.cord})
-	.register("up","u").as({part: "noun",  select:subject=>subject.in.exit.up.cord})
-	.register("down","d").as({part: "noun",  select:subject=>subject.in.exit.down.cord})
-*/
-
-	reify.defineVerb=function defineVerb(...verbs) //defineVerb("connect on through","connect to") -- "connect to" is verb + particle
+/*reify.defineVerb=function defineVerb(...verbs) //defineVerb("connect on through","connect to") -- "connect to" is verb + particle
 	{
 		if (verbs.length>0)
 		{
@@ -67,7 +28,7 @@ reify.glossary
 		}
 		return this
 	}
-/*	reify.definePreposition=function definePreposition(...prepositions)
+	reify.definePreposition=function definePreposition(...prepositions)
 	{
 		prepositions.forEach((preposition)=>
 		{
