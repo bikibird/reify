@@ -30,11 +30,12 @@ reify.cartesianProduct=function (a, b)
 
 }
 
-reify.formatId=function(id)
+reify.formatId=function(literals, ...expressions)
 {
-	if(id)
+
+	if(literals)
 	{ 
-		return id.trim().toLowerCase().replace(/\s+/g, '_')
+        return reify.toString(literals,...expressions).trim().toLowerCase().replace(/\s+/g, '_')
 	}	
 	else 
 	{
@@ -3120,11 +3121,6 @@ EBNF:
 	statement=>statement period
     statement=>subject predicate 
 	subject=>nounClause
-   
-	predicate=>verb directObject prepositionalPhrase*
-    prepositionalPhrase=>preposition target
-    directObject=>nounClause
-    target=>nounClause
     nounClause=>nounPhrase gerundPhrase?
     gerundPhrase=>gerund directObject prepositionalPhrase*
     nounPhrase=>article? adjectives* attributive? noun relativeClause*
@@ -3132,36 +3128,72 @@ EBNF:
 	noun=>lexiconNoun|wildcard|placeholder
 	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
 	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    
+    predicate=>verb directObject prepositionalPhrase*
+    prepositionalPhrase=>preposition target
+    directObject=>nounClause
+    target=>nounClause
+
     period=/^\./
+   
 */
 
 reify.dsl={}
 let dsl=reify.dsl
-dsl.article=reify.Rule().configure({minimum:0,filter:(definition)=>definition?.part==="article"})
-dsl.statement=reify.Rule()
-dsl.noun=reify.Rule().configure({mode:reify.Rule.apt})
+dsl.predicate=reify.Rule()
+
+dsl.nounClause=reify.Rule()
+    .snip("nounPhrase").snip("gerundPhrase")
+
+dsl.nounClause.nounPhrase
+    .snip("article",reify.dsl.article).snip("adjectives").snip("attributive").snip("noun",reify.dsl.noun).snip("relativeClause") 
+    .configure({semantics:interpretation=>
+    {
+        const definition=interpretation.gist.noun.definition
+        const key=definition.key??definition.match
+        const adjectives=interpretation.gist.adjectives?.map(adjective=>adjective.definition) ?? []
+        interpretation.gist={adjectives:adjectives, noun:key}
+
+        return true
+    }})
+dsl.nounClause.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})    
+dsl.nounClause.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
+dsl.nounClause.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
+dsl.nounClause.nounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
 	.snip(0)
 	.snip(1,reify.dsl.placeholder)
 	.snip(2,reify.dsl.wildcard)
-dsl.noun[0]
+dsl.nounClause.nounPhrase.noun[0]
     .configure({filter:(definition)=>definition?.part==="noun"})	
-dsl.nounPhrase=reify.Rule()
-dsl.placeholder=reify.Rule().configure({regex:/^#[a-zA-Z][\w ]*#/})
-dsl.predicate=reify.Rule()
-dsl.wildcard=reify.Rule().configure({regex:/^\_[a-zA-Z][\w ]*\_/})
+dsl.nounClause.nounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
+dsl.nounClause.nounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
+
+dsl.nounClause.nounPhrase.relativeClause
+    .snip("relativizer").snip("predicate",dsl.predicate)
+    .configure({minimum:0})
+dsl.nounClause.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
+
+
+dsl.prepositionalPhrases=reify.Rule()
+	.snip("preposition").snip("target",dsl.nounClause)
+    .configure({minimum:0,maximum:Infinity,greedy:true})
+dsl.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
+
+
+dsl.nounClause.gerundPhrase
+    .snip("gerund").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases)
+    .configure({minimum:0})
+dsl.nounClause.gerundPhrase.gerund.configure({filter:(definition)=>definition?.part==="gerund"})
 
 dsl.statements=reify.Rule()
-    .snip("statement",reify.dsl.statement).snip("period")
+    .snip("statement").snip("period")
     .configure({maximum:Infinity, semantics:interpretation=>
     {
         interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
         return true
     }})
-
-    
-
-dsl.statement
-    .snip("subject").snip("predicate",reify.dsl.predicate)
+dsl.statements.statement
+    .snip("subject",reify.dsl.nounClause).snip("predicate",dsl.predicate)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
         let verb=interpretation.gist.predicate.verb.definition
@@ -3174,55 +3206,12 @@ dsl.statement
         return true
 
     }})
-
-dsl.statement.subject
-    .snip(0,reify.dsl.nounPhrase)
-    .snip(1,reify.dsl.statement)
-    .configure({mode:reify.Rule.apt})    
-
-dsl.statements.period.configure({regex:/^\./})
-
-dsl.nounPhrase
-    .snip("article",reify.dsl.article).snip("adjectives").snip("noun",reify.dsl.noun)//.snip("restriction") 
-    .configure({semantics:interpretation=>
-    {
-        const definition=interpretation.gist.noun.definition
-        const key=definition.key??definition.match
-        const adjectives=interpretation.gist.adjectives?.map(adjective=>adjective.definition) ?? []//.forEach(adjective=>reify.net[key]?.[adjective.property]()===adjective.value)
-        interpretation.gist={adjectives:adjectives, noun:key}
-
-        return true
-    }})
-dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
-dsl.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
-
-
-
-
-/*dsl.nounPhrase.restriction
-    .snip(0) //appositive
-	.snip(1) //relative
-	.snip(2) //appositive + relative
-
-dsl.nounPhrase.restriction[0]
-    .snip("comma",reify.dsl.comma).snip("article",reify.dsl.article).snip("noun",reify.dsl.noun)
-dsl.nounPhrase.restriction[1]
-    .snip("relativizer",reify.dsl.relativizer).snip("predicate",reify.dsl.predicate)
-dsl.nounPhrase.restriction[2]
-    .snip("comma",reify.dsl.comma).snip("article",reify.dsl.article).snip("noun",reify.dsl.noun).snip("comma",reify.dsl.comma) .snip("restrictive",reify.dsl.relativizer).snip("predicate",reify.dsl.predicate)
-*/
-
-dsl.predicate.snip("verb").snip("directObject",dsl.statement.subject).snip("prepositionalPhrases")
-
+dsl.predicate
+    .snip("verb").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases)
 dsl.predicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
 
-dsl.predicate.prepositionalPhrases.configure({minimum:0,maximum:Infinity,greedy:true})
-	.snip("preposition").snip("target",dsl.statement.subject)
 
-dsl.predicate.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
-
-
-
+dsl.statements.period.configure({regex:/^\./})
 
 reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/[\s\,]+/ })
 
