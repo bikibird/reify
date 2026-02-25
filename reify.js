@@ -2591,9 +2591,10 @@ reify.facts=new Proxy
 
                         let keys=statement.arguments.map(argument=>argument.key)
                         statement.nouns=statement.arguments.map(argument=>reify.net[argument.value.noun]?reify.net[argument.value.noun]:reify.noun(argument.value.noun))
+                        /*removed passive voice from the spec.
                         //statements may use passive voice, but facts are always active voice. Swap subject and direct object if statement is passive.
-                        
                         if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
+                        */
 
                         let id=statement.nouns[0].id //+"_"+fact.predicate.verb
                         for (let index = 1; index < keys.length; index++) {id=id+"_"+keys[index]+"_"+statement.nouns[index].id}
@@ -2783,19 +2784,7 @@ reify.classes.Predicate=class Predicate
 		Object.defineProperty(this, "exclusive",{value:false,enumerable:false})
 		Object.defineProperty(this, "_index",{value:new reify.Reality(),enumerable:false,writable:true})
 
-		reify.lang.conjugate(this.verb,"active","affirmative")
-			.concat(reify.lang.conjugate(this.verb,"active","negative"))
-			.forEach(conjugation=>
-			{
-				let name=conjugation.name
-				delete conjugation.name
-				conjugation.predicate=this
-				reify.glossary.register(name).as(conjugation)
-			})
-
-        reify.adjective(reify.lang.ing(this.verb)).describes(noun=>noun._indexes[0].filter(this._index).size>0)
-        reify.adjective(reify.lang.ed(this.verb)).describes(noun=>noun._indexes[1].filter(this._index).size>0)
-
+		reify.lang.conjugatePredicate(this)
 		this.prepositions.forEach(preposition=>
 		{
 			reify.glossary.register(preposition).as({part:"preposition", key:preposition, predicate:this})
@@ -2832,7 +2821,8 @@ reify.classes.Predicate=class Predicate
 		if (reality.size>0) return true
 		return false
 	}
-	passive(literals, ...expressions)
+	/*  //Can we get away with no passive voice for the DSL?
+    passive(literals, ...expressions)
 	{
 		let verb=reify.toString(literals, ...expressions)
 		reify.lang.conjugate(verb,"passive","affirmative")
@@ -2845,6 +2835,7 @@ reify.classes.Predicate=class Predicate
 				reify.glossary.register(name).as(conjugation)
 			})
 	}
+    */
 	induce(statement) //{predicate, tense, mood, voice, polarity, arguments, nouns}
 	{
         //induce is used for supplementary facts associated with the statement
@@ -3091,15 +3082,30 @@ _the_ring_bearer_ carries the owned ring.  //more concise
 
 
 
-Bob carries the ring.
-    subject=>nounPhrase
-    nounPhrase=>article? adjectives* noun
+Bob carries the ring. => bob,carry,ring
 
-Alice knows bob carries the ring.
-    object=>nounClause
-    nounClause=>nounPhrase predicate
+Alice knows bob is carrying the ring. => alice, know, (bob, carry ring) need to implement "is verbing"
+Wrong: alice knows bob carries the ring. //Should this be allowed when the fact is the indirect object?  alice, know, (bob, carry ring)
+=>subject predicate
 
-Bob carrying the ring endangers Charles.
+predicate=>verb directObject
+directObject=>nounClause
+nounClause=>subject predicate direct Object
+
+
+Wrong: alice knows that bob carries the ring. //looks too much like restrictive clause
+
+
+
+
+
+
+
+
+
+
+
+Bob carrying the ring endangers Charles. => 
     subject=>gerundPhrase
     gerundPhrase=>nounPhrase gerund gerundComplement
 
@@ -3113,6 +3119,21 @@ _someone_, who is a person and who wears a hat, carrying the ring endangers Char
     matches fact: (Bob~carries~ring)~endangers~charles
 _someone_ who is a person and who wears a hat and who carries the ring endangers Charles.
     matches fact: Bob~endangers~charles
+
+//player carries ring.
+//player does not carry ring.
+//some people carry treasure chest.
+//some people do not carry treasure chest.
+//player carried ring.
+//player did not carry ring.
+//the player carrying the ring endangers the plan.
+//the player not carrying the ring endangers the plan.
+//the player having carried the ring endangers the plan.
+//the player having not carried the ring endangers the plan.
+//the carried ring endangers the plan.
+//the carrying player endangers the plan.
+
+
 
 
 
@@ -3238,8 +3259,10 @@ reify.select=function(literals, ...expressions)
             const placeholder={}
             const statement=interpretations[0].gist[0]
             const predicate=statement.predicate
+            /* Can we get away with no passive voice
             //statements maybe in active or passive voice, but facts are always in active voice.
             if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
+            */
             statement.voice===reify.lang.active
             statement.arguments.forEach((argument,index)=>
             {
@@ -3303,8 +3326,10 @@ reify.select=function(literals, ...expressions)
             const placeholder={}
             const statement=interpretations[0].gist[0]
             const predicate=statement.predicate
+            /* Can we get away with no passive voice in DSL?
             //statements maybe in active or passive voice, but facts are always in active voice.
             if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
+            */
             statement.voice===reify.lang.active
             statement.arguments.forEach((argument,index)=>
             {

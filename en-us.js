@@ -193,165 +193,151 @@ reify.lang.number={singular:0,plural:1}
 reify.lang.person={first:0,second:1,third:2}
 
 // #region tense
-//was east of, is east of, 
 
-reify.lang.auxiliaries=
-{
-	active:
-	{
-		affirmative:
-		{
-			past:[""],
-			present:[""],
-			future:["will"],
-			perfect:["had"]
-		},
-		negative:
-		{
-			past:["did not","didn't"],  //player did not carry
-			present:["does not","doesn't","do not", "don't"],	//player does not carry
-			future:["will not","won't"], //player will not carry
-			perfect:["had not","hadn't"] //player had not carried
-		},
-		
-	},
-	passive:
-	{
-		affirmative:
-		{
-			past:["was","were"],
-			present:["is","are"],
-			future:["will be"],
-			perfect:["had been"]
-		},
-		negative:
-		{
-			past:["was not","wasn't","were not","weren't"],
-			present:["is not","isn't","aren't", "are not"],
-			future:["will not be","won't be"],
-			perfect:["had not been","hadn't been"]
-		},
-	}
-}
 
-reify.lang.be=
-{
-	affirmative:
-	{
-		past:["was","were"],
-		present:["is"],
-		future:["will be"],
-		perfect:["had been"]
-	},
-	negative:
-	{
-		past:["was not","wasn't","were not","weren't"],  //player did not carry
-		present:["is not","isn't"],	//player does not carry
-		future:["will not be","won't be"], //player will not carry
-		perfect:["had not been","hadn't been"] //player had not carried
-	},
-}
+/*
+the player carries the ring.
+the player does not carry the ring.
+some people carry the treasure chest.
+some people do not carry the treasure chest.
 
-reify.lang.conjugate=(verb,voice,polarity)=>
-{
-	let conjugations=[]
+the player carried the ring. //moving a fact into past tense moves it to history and negates fact in present.
+
+the player having carried the ring endangers the plan //player carried the ring at some point in history
+The player carrying the ring endangers the plan. //present tense
+the player not carrying ring endangers the plan. //present test negative
+the player having not carried the ring endangers the plan //player carried the ring at some point in history
+
+relativeClause=> relativizer subject predicate | relativizer predicate directObject 
+
+
+the ring that the player gave to Linda endangers the plan => endanger: ring, plan
+the player that gave the ring to Linda endangers the plan =>endanger:player, plan
+the player giving the ring to Linda endangers the plan => endanger: fact, plan
+
+the ring that the player gave to _someone_ endangers the plan => endanger: ring, plan
+the player that gave the _something_ to Linda endangers the plan =>endanger:player, plan
+the _actor_ giving the ring to Linda endangers the plan => endanger: fact, plan
+
+
+
+//gerund form all active voice
+
+the player carrying the ring endangers the plan 
+the player not carrying the ring endangers the plan
+the player having carried the ring endangers the plan
+the player having not carried the ring endangers the plan
+
+the player who carries the ring endangers the plan => endanger: player, plan
+the ring that the player carries endangers the plan => endanger: ring, plan
+
+//Verbs cannot be the bases of adjectives.
+
+wrong: the carried ring endangers the plan => endanger: ring, plan
+the ring that _anyone_ gave to Linda endangers the plan => endanger: ring, plan
+
+wrong: the carrying player
+the player who carries _anything_ endangers the plan=>endanger: player, plan
+
+
+
+
+
+
+*/
+
+
+reify.lang.conjugatePredicate=(predicate)=>
+{   
+    let verb=predicate.verb
 	let particles=verb.split(" ")
-	if (particles[0].slice(0,2) ==="be")
+	if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" for example 
 	{
-		let complement=" "+particles.slice(1).join(" ")
-		reify.lang.be[polarity].past.forEach(form=>
-		{
-			conjugations.push({part:"verb",name:form+complement,tense:reify.lang.past,mood:reify.lang.indicative,
-				voice:reify.lang.active,polarity:reify.lang[polarity]})
-		})
-		reify.lang.be[polarity].present.forEach(form=>
-		{
-			conjugations.push({part:"verb",name:form+complement,tense:reify.lang.present,mood:reify.lang.indicative,
-				voice:reify.lang.active,polarity:reify.lang[polarity]})
-		})
-		reify.lang.be[polarity].future.forEach(form=>
-		{
-			conjugations.push({part:"verb",name:form+complement,tense:reify.lang.future,mood:reify.lang.indicative,
-				voice:reify.lang.active,polarity:reify.lang[polarity]})
-		})
-		reify.lang.be[polarity].perfect.forEach(form=>
-		{
-			conjugations.push({part:"verb",name:form+complement,tense:reify.lang.perfect,mood:reify.lang.indicative,
-				voice:reify.lang.active,polarity:reify.lang[polarity]})
-		})
+        //the ring is gold
+        //the ring is not gold
+        //the cherries are sweet
+        //the cherries are not sweet
+        //the ring was not gold
+        //the ring was gold
+        //the cherries were sweet
+        //the cherries were not sweet
+        //the ring being gold endanger the plan.
+        //the ring not being gold endanger the plan.
+        //the ring having been gold endanger the plan.
+        //the ring having not been gold endanger the plan.
 
+		let complement=" "+particles.slice(1).join(" ")
+        reify.glossary.register(("is"+complement))
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        reify.glossary.register("is not"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        reify.glossary.register("are"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        reify.glossary.register("are not"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        reify.glossary.register("was"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        reify.glossary.register("was not"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})
+        reify.glossary.register("were"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        reify.glossary.register("were not"+complement)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative}) 
+        reify.glossary.register("being"+complement)
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})  
+        reify.glossary.register("not being"+complement)
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})  
+        reify.glossary.register("having been"+complement)
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})  
+        reify.glossary.register("having not been"+complement)
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})  
 	}
 	else
 	{
-		reify.lang.auxiliaries[voice][polarity].past.forEach(aux=>
-		{
-			
-			if (voice==="active")
-			{
-				if (polarity=="affirmative")
-				{
-					
-					conjugations.push({part:"verb",name:(aux+" "+reify.lang.ed(verb)).trim(),tense:reify.lang.past,mood:reify.lang.indicative,
-						voice:reify.lang[voice],polarity:reify.lang[polarity]})
-				}
-				else
-				{
-					conjugations.push({part:"verb",name:(aux+" "+verb).trim(),tense:reify.lang.past,mood:reify.lang.indicative,
-						voice:reify.lang[voice],polarity:reify.lang[polarity]})
-					
-				}
-			}
-			else
-			{
-				conjugations.push({part:"verb",name:(aux+" "+reify.lang.en(verb)).trim(),tense:reify.lang.past,mood:reify.lang.indicative,
-					voice:reify.lang[voice],polarity:reify.lang[polarity]})
-			}
-		})
-		reify.lang.auxiliaries[voice][polarity].present.forEach(aux=>
-		{
-			
-			if (voice=="active")
-			{
-				conjugations.push({part:"verb",name:(aux+" "+verb).trim(),tense:reify.lang.present,mood:reify.lang.indicative,
-					voice:reify.lang[voice],polarity:reify.lang[polarity]})
-				if (polarity=="affirmative")
-				{
-					conjugations.push({part:"verb",name:reify.lang.es((aux+" "+verb).trim()),tense:reify.lang.present,mood:reify.lang.indicative,
-						voice:reify.lang[voice],polarity:reify.lang[polarity]})
-				}
-			}
-			else
-			{
-				conjugations.push({part:"verb",name:(aux+" "+reify.lang.en(verb)).trim(),tense:reify.lang.present,mood:reify.lang.indicative,
-					voice:reify.lang[voice],polarity:reify.lang[polarity]})
-			}
-			
-		})
-		reify.lang.auxiliaries[voice][polarity].future.forEach(aux=>
-		{
-			if (voice=="active")
-			{
-				conjugations.push({part:"verb",name:(aux+" "+verb).trim(),tense:reify.lang.future,mood:reify.lang.indicative,
-					voice:reify.lang[voice],polarity:reify.lang[polarity]})
-			}
-			else
-			{
-				conjugations.push({part:"verb",name:(aux+" "+reify.lang.en(verb).trim()),tense:reify.lang.future,mood:reify.lang.indicative,
-					voice:reify.lang[voice],polarity:reify.lang[polarity]})
-			}
-			
-		}),
-		reify.lang.auxiliaries[voice][polarity].perfect.forEach(aux=>
-		{
+        //player carries ring
+        //player does not carry ring
+        //some people carry treasure chest
+        //some people do not carry treasure chest
+        //player carried ring
+        //player did not carry ring
+        //the player carrying the ring endangers the plan
+        //the player not carrying the ring endangers the plan
+        //the player having carried the ring endangers the plan
+        //the player having not carried the ring endangers the plan
+        //Alice knows about the player carrying the ring
+        //Alice knows about the player not carrying the ring
+        
+        //the carried ring endangers the plan  //adjective
+        //the carrying player endangers the plan //adjective
+        
 
-			conjugations.push({part:"verb",name:(aux+" "+reify.lang.en(verb)).trim(),tense:reify.lang.perfect,mood:reify.lang.indicative,
-				voice:reify.lang[voice],polarity:reify.lang[polarity]})
-
-		})
-	}
-   
-	return conjugations
+        reify.glossary.register(reify.lang.es(verb)).
+            as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        reify.glossary.register("does not "+verb)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        reify.glossary.register(verb.trim())
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        reify.glossary.register("do not "+verb)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        reify.glossary.register(reify.lang.ed(verb))
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        reify.glossary.register("did not "+verb)
+            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})
+        reify.glossary.register(reify.lang.ing(verb))
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        reify.glossary.register("not "+reify.lang.ing(verb))
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        reify.glossary.register("having "+reify.lang.ed(verb))
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        reify.glossary.register("having not "+reify.lang.ed(verb))
+            .as({part:"gerund",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})
+    }
+	reify.adjective(reify.lang.ing(verb)).describes(noun=>noun._indexes[0].filter(predicate._index).size>0)
+    reify.adjective(reify.lang.ed(verb)).describes(noun=>noun._indexes[1].filter(predicate._index).size>0)
 }
+
+
+
 
 
 reify.lang.past=0 //I ATE
