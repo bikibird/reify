@@ -435,8 +435,8 @@ reify.Parser.prototype.analyze=function(text)
 	var interpretations=[]
 	var partialInterpretations=[]
 	var completeInterpretations=[]
-	var {snippets:result,errors}=this.grammar.parse(text,this.lexicon,[],this.separator, this.boundary)
-    if(errors.length>0)
+	var {snippets:result,errors,remainderErrors}=this.grammar.parse(text,this.lexicon,[],this.separator, this.boundary)
+    if(errors.length>0 )
     {
         throw new Error("ERROR 0005: "+errors.join(" "))
     }
@@ -468,7 +468,11 @@ reify.Parser.prototype.analyze=function(text)
 	{
 		if (partialInterpretations.length>0)
 		{
-			return {success:false, interpretations: partialInterpretations.sort(function(first,second){return first.remainder.length - second.remainder.length})}
+
+			console.log({success:false, interpretations: partialInterpretations.sort(function(first,second){return first.remainder.length - second.remainder.length})})
+
+            throw new Error("ERROR 0005: "+remainderErrors.join(" "))
+            
 		}
 		else
 		{
@@ -612,8 +616,8 @@ reify.Rule.prototype.parse =function(text,lexicon,errors,separator,boundary)
                                     })
                                 }
 							}  
-						})
-						//`${Object.keys(phrases[0].gist)[1]}=>${phrases[0].gist.lexeme}`
+						}) //revisedCandidates
+                        
 						if (this[key].minimum===0)
 						{
 							if (this[key].greedy && phrases.length>0)
@@ -630,10 +634,8 @@ reify.Rule.prototype.parse =function(text,lexicon,errors,separator,boundary)
 						{
 							revisedCandidates=phrases.slice(0)
 						}
-                       
-
-						
-						phrases=[]
+						phrases=[] //ready for next key
+                        if (revisedCandidates.length===0) break  //no more candidates to work with
                         
 					}//for keys
 					counter++
@@ -885,7 +887,7 @@ reify.Rule.prototype.parse =function(text,lexicon,errors,separator,boundary)
 	},[])
 	if (results.length>0)
 	{
-		return {snippets:results,errors:[]}	
+		return {snippets:results,errors:[],remainderErrors:errors}	
 	}
 	else
 	{
@@ -2581,6 +2583,7 @@ reify.facts=new Proxy
 		{
             var source=reify.toString(literals, ...expressions)
             let {success,interpretations}=reify.dslParser.analyze(source)
+            console.log(interpretations)
             if (success)
             {
                 if (interpretations.length==0)
