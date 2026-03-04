@@ -435,13 +435,20 @@ reify.Parser.prototype.analyze=function(text)
 	var interpretations=[]
 	var partialInterpretations=[]
 	var completeInterpretations=[]
-	var {snippets:result}=this.grammar.parse(text,this.lexicon, this.separator, this.boundary)
+	var {snippets:result,errors}=this.grammar.parse(text,this.lexicon,[],this.separator, this.boundary)
+    if(errors.length>0)
+    {
+        throw new Error("ERROR 0005: "+errors.join(" "))
+    }
+    
 	if (result)
 	{
 		interpretations=interpretations.concat(result)
 	}
+    
  	interpretations.forEach((interpretation)=>
 	{
+
 		if (interpretation.remainder.length>0)
 		{
 			partialInterpretations.push(interpretation)
@@ -552,11 +559,12 @@ reify.Rule.prototype.configure =function({caseSensitive, entire, filter, full, g
     if(boundary !== undefined){this.boundary=boundary}
 	return this
 }
-reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
+reify.Rule.prototype.parse =function(text,lexicon,errors,separator,boundary)
 {
 	var someText=text.slice(0)
 	var results=[]
 	var keys=Object.keys(this)
+    let parsing=""
 	if (keys.length>0)
 	//non-terminal
 	{
@@ -579,26 +587,33 @@ reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 							if (remainder.length>0)
 							{
 
-								var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
-								snippets.forEach((snippet)=>
-								{
-									var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
-										candidate.lexeme+remainder.slice(0,remainder.length-snippet.remainder.length))										
-									if (this.maximum ===1 )
-									{
-										if(this[key].keep || !phrase.valid){phrase.gist[key]=snippet.gist}
-									}
-									else 
-									{
-										if(phrase.gist.length===counter){phrase.gist.push({})}
-										if(this[key].keep  || !phrase.valid){phrase.gist[counter][key]=snippet.gist}
-									}
-									phrases.push(phrase)
-								
-								})
+								var {snippets}=this[key].parse(remainder.slice(0),lexicon,errors,separator,boundary) 
+                                if (snippets.length===0 && this[key].minimum>0)
+                                {
+                                    errors.unshift(`Unable to parse \`${remainder}\` as ${key}.`)
+                                }
+                                else
+                                {
+                                    snippets.forEach((snippet)=>
+                                    {
+                                        var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
+                                            candidate.lexeme+remainder.slice(0,remainder.length-snippet.remainder.length))	
+                                        if (this.maximum ===1 )
+                                        {
+                                            if(this[key].keep || !phrase.valid){phrase.gist[key]=snippet.gist}
+                                        }
+                                        else 
+                                        {
+                                            if(phrase.gist.length===counter){phrase.gist.push({})}
+                                            if(this[key].keep  || !phrase.valid){phrase.gist[counter][key]=snippet.gist}
+                                        }
+                                        phrases.push(phrase)
+                                    
+                                    })
+                                }
 							}  
 						})
-						
+						//`${Object.keys(phrases[0].gist)[1]}=>${phrases[0].gist.lexeme}`
 						if (this[key].minimum===0)
 						{
 							if (this[key].greedy && phrases.length>0)
@@ -611,17 +626,20 @@ reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 							}
 							
 						}
-						else
+						else 
 						{
 							revisedCandidates=phrases.slice(0)
 						}
+                       
+
 						
 						phrases=[]
-					}
+                        
+					}//for keys
 					counter++
 					if (revisedCandidates.length===0)
 					{
-						break
+						break //while counter
 					}
 					else
 					{
@@ -649,7 +667,7 @@ reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 							//SNIP
 								if (remainder.length>0)
 								{
-									var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
+									var {snippets}=this[key].parse(remainder.slice(0),lexicon,errors,separator,boundary) 
 									snippets.forEach((snippet)=>
 									{
 										var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
@@ -706,7 +724,7 @@ reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 							//SNIP
 							if (remainder.length>0)
 							{
-								var {snippets}=this[key].parse(remainder.slice(0),lexicon,separator,boundary) 
+								var {snippets}=this[key].parse(remainder.slice(0),lexicon,errors,separator,boundary) 
 								snippets.forEach((snippet)=>
 								{
 									var phrase=new reify.Interpretation(gist,snippet.remainder,snippet.valid && valid,
@@ -867,11 +885,11 @@ reify.Rule.prototype.parse =function(text,lexicon,separator,boundary)
 	},[])
 	if (results.length>0)
 	{
-		return {snippets:results}	
+		return {snippets:results,errors:[]}	
 	}
 	else
 	{
-		return {snippets:[]}
+		return {snippets:[],errors:errors}
 	}	
 }
 reify.Rule.prototype.snip =function(key,rule)
@@ -3050,8 +3068,8 @@ EBNF:
     prepositionalPhrase=>preposition target
     directObject=>nounClause
     target=>nounClause
-    nounClause=>nounPhrase gerundPhrase?
-    gerundPhrase=>gerund directObject prepositionalPhrase*
+    nounClause=>nounPhrase|fact
+    fact=>gerund directObject prepositionalPhrase*
     nounPhrase=>article? adjectives* attributive? noun relativeClause*
     relativeClause=>relativizer predicate
 	noun=>lexiconNoun|wildcard|placeholder
@@ -3142,8 +3160,8 @@ EBNF:
 	statement=>statement period
     statement=>subject predicate 
 	subject=>nounClause
-    nounClause=>nounPhrase gerundPhrase?
-    gerundPhrase=>gerund directObject prepositionalPhrase*
+    nounClause=>fact | nounPhrase
+    fact=>leftBracket nounPhrase gerund directObject prepositionalPhrase* rightBracket
     nounPhrase=>article? adjectives* attributive? noun relativeClause*
     relativeClause=>relativizer predicate
 	noun=>lexiconNoun|wildcard|placeholder
@@ -3154,7 +3172,8 @@ EBNF:
     prepositionalPhrase=>preposition target
     directObject=>nounClause
     target=>nounClause
-
+    leftBracket=/^\[/
+    rightBracket=/^\]/
     period=/^\./
    
 */
@@ -3163,10 +3182,7 @@ reify.dsl={}
 let dsl=reify.dsl
 dsl.predicate=reify.Rule()
 
-dsl.nounClause=reify.Rule()
-    .snip("nounPhrase").snip("gerundPhrase")
-
-dsl.nounClause.nounPhrase
+dsl.nounPhrase=reify.Rule()
     .snip("article",reify.dsl.article).snip("adjectives").snip("attributive").snip("noun",reify.dsl.noun).snip("relativeClause") 
     .configure({semantics:interpretation=>
     {
@@ -3177,22 +3193,22 @@ dsl.nounClause.nounPhrase
 
         return true
     }})
-dsl.nounClause.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})    
-dsl.nounClause.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
-dsl.nounClause.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
-dsl.nounClause.nounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
+dsl.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})    
+dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
+dsl.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
+dsl.nounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
 	.snip(0)
 	.snip(1,reify.dsl.placeholder)
 	.snip(2,reify.dsl.wildcard)
-dsl.nounClause.nounPhrase.noun[0]
+dsl.nounPhrase.noun[0]
     .configure({filter:(definition)=>definition?.part==="noun"})	
-dsl.nounClause.nounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
-dsl.nounClause.nounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
+dsl.nounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
+dsl.nounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
 
-dsl.nounClause.nounPhrase.relativeClause
+dsl.nounPhrase.relativeClause
     .snip("relativizer").snip("predicate",dsl.predicate)
     .configure({minimum:0})
-dsl.nounClause.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
+dsl.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
 
 
 dsl.prepositionalPhrases=reify.Rule()
@@ -3200,11 +3216,18 @@ dsl.prepositionalPhrases=reify.Rule()
     .configure({minimum:0,maximum:Infinity,greedy:true})
 dsl.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
 
+dsl.nounClause=reify.Rule().configure({mode:reify.Rule.apt})
 
-dsl.nounClause.gerundPhrase
-    .snip("gerund").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases)
+    .snip(0) //fact
+    .snip(1,dsl.nounPhrase)
+
+
+dsl.nounClause[0] //fact
+    .snip("leftBracket").snip("subject",dsl.nounClause).snip("gerund").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases).snip("rightBracket")
     .configure({minimum:0})
-dsl.nounClause.gerundPhrase.gerund.configure({filter:(definition)=>definition?.part==="gerund"})
+dsl.nounClause[0].gerund.configure({filter:(definition)=>definition?.part==="gerund"})
+dsl.nounClause[0].leftBracket.configure({regex:/^\[/,lax:true})
+dsl.nounClause[0].rightBracket.configure({regex:/^\]/,lax:true})
 
 dsl.statements=reify.Rule()
     .snip("statement").snip("period")
@@ -3232,7 +3255,7 @@ dsl.predicate
 dsl.predicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
 
 
-dsl.statements.period.configure({regex:/^\./})
+dsl.statements.period.configure({regex:/^\./,lax:true})
 
 reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/[\s\,]+/ })
 
