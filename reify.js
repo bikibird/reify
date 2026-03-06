@@ -2546,8 +2546,12 @@ reify.adjective=function(literals, ...expressions)
 			if (type==="enum")
 			{
 				reify.glossary.register(adjective).as({part: "adjective",key:property, value:noun=>{
-                    if (noun[property]===index) return index
+                    if (noun[property]===index) return true
                     else return false
+                }})
+                reify.glossary.register("not " + adjective).as({part: "adjective",key:property, value:noun=>{
+                    if (noun[property]===index) return false
+                    else return true
                 }})
 			}
 			else if(type=="boolean")
@@ -2557,6 +2561,10 @@ reify.adjective=function(literals, ...expressions)
 				{
 					reify.glossary.register(adjOpposite).as({part: "adjective",key:adjOpposite,value:noun=>noun[property]===false})
 				}
+                else
+                {
+                    reify.glossary.register("not "+adjective).as({part: "adjective",key:adjOpposite,value:noun=>noun[property]===false})
+                }
 			}
 		})
 		return reify
