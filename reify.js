@@ -3167,26 +3167,51 @@ _someone_ who is a person and who wears a hat and who carries the ring endangers
 
 
 EBNF:
-    statements=>statement+
-	statement=>statement period
+
+    leftBracket=>/^\[/
+    rightBracket=>/^\]/
+    leftParen=>/^\(/
+    rightParen=>/^\)/
+    period=>/^\./
+    wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+
+    selections=>(selection period)+ //select existing facts into a reality
+    selection=>subject predicate 
+	subject=>nounClause
+    nounClause=>fact | nounPhrase
+    fact=>leftBracket nounPhrase gerund directObject prepositionalPhrase* rightBracket
+    nounPhrase=>adjectives* attributive? noun relativeClauses*
+    article=>lexiconArticle
+    adjectives=>lexiconAdjective
+    attributive=>lexiconAttributive
+    relativeClauses=>relativizer predicate
+	noun=>lexiconNoun|wildcard|placeholder
+	predicate=>verb directObject prepositionalPhrase*
+    verb=>lexiconVerb
+    prepositionalPhrase=>preposition target
+    directObject=>nounClause
+    target=>nounClause
+
+    statements=>(statement period)+  //create one or more facts
     statement=>subject predicate 
 	subject=>nounClause
     nounClause=>fact | nounPhrase
     fact=>leftBracket nounPhrase gerund directObject prepositionalPhrase* rightBracket
-    nounPhrase=>article? adjectives* attributive? noun relativeClause*
-    relativeClause=>relativizer predicate
-	noun=>lexiconNoun|wildcard|placeholder
-	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+    nounPhrase=>noun
+    noun=>lexiconNoun|placeholder
 	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
-    
     predicate=>verb directObject prepositionalPhrase*
     prepositionalPhrase=>preposition target
     directObject=>nounClause
     target=>nounClause
-    leftBracket=/^\[/
-    rightBracket=/^\]/
-    period=/^\./
-   
+
+    condition => term | condition or term
+    term => factor | term and factor | grouping
+    factor => negation| selection | grouping
+    negation =>not selection | not grouping
+    grouping=> leftParen condition rightParen
+    
 */
 
 reify.dsl={}
@@ -3194,7 +3219,7 @@ let dsl=reify.dsl
 dsl.predicate=reify.Rule()
 
 dsl.nounPhrase=reify.Rule()
-    .snip("article",reify.dsl.article).snip("adjectives").snip("attributive").snip("noun",reify.dsl.noun).snip("relativeClause") 
+    .snip("adjectives").snip("attributive").snip("noun",reify.dsl.noun).snip("relativeClause") 
     .configure({semantics:interpretation=>
     {
         const definition=interpretation.gist.noun.definition
@@ -3204,7 +3229,6 @@ dsl.nounPhrase=reify.Rule()
 
         return true
     }})
-dsl.nounPhrase.article.configure({minimum:0,filter:(definition)=>definition?.part==="article"})    
 dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
 dsl.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
 dsl.nounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
