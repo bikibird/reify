@@ -735,3 +735,40 @@ ishml.reify=function(literals, ...expressions)
 	}
 
 }
+
+
+
+//reify.dsl.statementNounClause=reify.Rule()
+
+/*reify.dsl.statementNounClause.configure({mode:reify.Rule.apt})
+    .snip(0) //fact
+    .snip(1,reify.dsl.noun)
+reify.dsl.statementNounClause[0] //fact
+    .snip("leftBracket").snip("subject",reify.dsl.statementNounClause).snip("gerund").snip("directObject",reify.dsl.statementNounClause).snip("prepositionalPhrases",reify.dsl.statementPredicate.prepositionalPhrases).snip("rightBracket")
+    .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
+    {
+        let gist =interpretation.gist
+        let directObject=gist.predicate.directObject
+        let gerund=gist.gerund.definition
+        let predicate=gerund.predicate
+        let prepositions=gist.prepositionalPhrases.map(preposition=>preposition.definition.key)
+        let argumentList=[]
+        //Check if prepositions match
+        if (prepositions.length !== predicate.prepositions.length) return false
+        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
+        
+        argumentList.push(reify.net[gist.subject.definition.key])
+        if(directObject) argumentList.push(reify.net[directObject.definition.key])
+        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push(reify.net[phrase.target.definition.key]))
+    
+        let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)
+        for (let index = 1; index < argumentList.length; index++) {id=id+" "+argumentList[index].id}
+        id="["+id+"]"
+        interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,nouns:argumentList}
+        return true
+
+    }})
+
+reify.dsl.statementNounClause[0].gerund.configure({filter:(definition)=>definition?.part==="gerund"})
+reify.dsl.statementNounClause[0].leftBracket.configure({regex:/^\[/,lax:true})
+reify.dsl.statementNounClause[0].rightBracket.configure({regex:/^\]/,lax:true})*/

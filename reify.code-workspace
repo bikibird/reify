@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "reify"
+		},
+		{
+			"path": "../ishml/src/english"
+		}
+	],
+    "settings": {}
+}

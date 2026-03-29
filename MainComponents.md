@@ -639,7 +639,7 @@ Changing a noun's property generates a reality from a reify of the form `theNoun
 For pure choice based fiction that does not do a lot of tracking of the world state, it may be inconvenient to create nouns and predicate just to match a scene. It is possible to link a scene directly by declaring the scene with a handle using @, for example reify.scene`@exciting denouement`  The scene may then be called directly with reify.tell`exciting denouement`.
 
 
-reify.scene`The player will go north.`action((reality)=>)
+reify.scene`The player tries going north.`action((reality)=>)
 reify.scene`The player is ill.`.actiong(()=>)  // copula applies ill adjective to player's health for match
 
 reify.plot={} //members are scenes.
@@ -658,8 +658,34 @@ reify.scene`_person_ takes shiny ring.` //The scene is indexed in ring.
 reify.scene`player takes shiny ring.` //The scene is indexed in both player and ring.
 reify.scene`@player takes shiny ring.` //handle scenes are indexed in the plot only for choice based fiction.
 
+reify.scene`player passed ball to alice and alice is sleepy.`
+reify.scene`player passed ball to alice or alice is sleepy.`
+
+reify.scene`player wears cardigan and player wears cap.`
+reify.scene`player wears cardigan and player does not wear cap.`
+reify.scene`player wears cardigan or player does not wear cap.`
+
 
 Within the action, calling this.unfold() will call the scene that applies but is less specific to the situation. It works like bubbling events in javascript
+
+
+reify.scene`player does not wear jacket.`.implies`complaining mood`
+reify.scene`player wears jacket and player wears rose colored glasses.`.negates`complaining mood`
+reify.scene`player takes _something_ and complaining mood`
+.unfoldBefore()
+.action((scene)=>  //define an action if you to unfold or you have a more complex behavior.
+{
+    scene.append('#story').narrate()
+    reify.unfold()
+})
+.now`player carries #something#.`
+.append`#story`._`It's probably useless.`
+
+.unfoldAfter()
+
+reify.scene`_someone_ does not wear jacket.`.implies`_someone_ is in a complaining mood`
+
+reify.scene`_someone_ wears _something_ or _someone_ carries _something_`.implies`_someone_ has _something_` 
 
 
 
