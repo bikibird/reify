@@ -2582,109 +2582,33 @@ reify.adjective=function(literals, ...expressions)
 // #endregion
 
 // #region Fact
-reify.facts=new Proxy 
-(
-	class Fact
-	{
-		constructor(literals, ...expressions)
-            //statement={tense:0,mood:0,voice:0,polarity:0}) //reify.fact({predicate:{},tense:1,mood:0,voice:0,polarity:0,arguments:{subject:{},carry:{}},nouns:[]}
-		{
-            var source=reify.toString(literals, ...expressions)
-            let {success,interpretations}=reify.dslParser.analyze(source)
-            console.log(interpretations)
-            if (success)
+
+reify.facts=function(literals, ...expressions)
+    { 
+        let {success,interpretations}=reify.statementParser.analyze(reify.toString(literals, ...expressions))
+        console.log(interpretations)
+        if (success)
+        {
+            if (interpretations.length==0)
             {
-                if (interpretations.length==0)
-                {
-                    throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
-                } 
-                else if (interpretations.length>1) 
-                {
-                    throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
-                }
-                else
-                {
-                    interpretations[0].gist.forEach(statement=>
-                    {
-                        statement.placeholder={}
-                        statement.arguments.forEach(argument=>
-                            {if (argument.value.noun.startsWith("#")) argument.value.noun=argument.value.noun.slice(1,-1)})
-                        statement.valid=true
-                        statement.arguments.forEach(argument=>argument.value.adjectives.forEach(adjective=>
-                        {
-                            if (adjective.value(reify.net[argument.value.noun])===false) statement.valid=false
-                        }))
-
-
-                        statement=statement.predicate.induce(statement)  
-
-                        let keys=statement.arguments.map(argument=>argument.key)
-                        statement.nouns=statement.arguments.map(argument=>reify.net[argument.value.noun]?reify.net[argument.value.noun]:reify.noun(argument.value.noun))
-                        /*removed passive voice from the spec.
-                        //statements may use passive voice, but facts are always active voice. Swap subject and direct object if statement is passive.
-                        if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
-                        */
-
-                        let id=statement.nouns[0].id //+"_"+fact.predicate.verb
-                        for (let index = 1; index < keys.length; index++) {id=id+"_"+keys[index]+"_"+statement.nouns[index].id}
-                        let fact=reify.net[id]
-
-                        if (fact) //update existing fact.
-                        {
-                            history[reify.turn]={clock:reify.clock,tense:fact.tense,mood:fact.mood,polarity:fact.polarity }
-                            fact.tense=statement.tense
-                            fact.mood=statement.mood
-                            fact.polarity=statement.polarity
-                        }
-                        else
-                        {
-                            // statement.arguments=statement.arguments.reduce((a, b,index)=>Object.assign(a,{[b.key]:statement.nouns[index]}),{}) //subject:"player" to subject:player
-                            Object.defineProperty(this, "id",{value:id,enumerable:false})
-                            Object.defineProperty(this, "predicate",{value:statement.predicate,enumerable:false})
-                            Object.defineProperty(this, "tense",{value:statement.tense,enumerable:false})
-                            Object.defineProperty(this, "mood",{value:statement.mood,enumerable:false})
-                            //Object.defineProperty(this, "voice",{value:statement.voice,enumerable:false})  //all facts in network are active voice
-                            Object.defineProperty(this, "polarity",{value:statement.polarity,enumerable:false})
-                            Object.defineProperty(this, "nouns",{value:statement.nouns,enumerable:false})
-                            Object.defineProperty(this, "history",{value:[],enumerable:false})
-                            // Object.assign(this,statement.arguments)
-                            this.history[reify.turn]={clock:reify.clock,tense:this.tense,mood:this.mood,polarity:this.polarity }
-
-
-                            reify.net[id]=this
-                            fact= this
-                        }
-
-                        fact.nouns.forEach((noun,index)=>
-                            {
-                                let i=noun._indexes
-                                if (i[index] instanceof reify.Reality) i[index].add(fact)
-                                else i[index]=new reify.Reality(fact)
-                            })
-                        fact.predicate._index.add(fact)
-                        return fact
-                    })
-                }
+                throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
+            } 
+            else if (interpretations.length>1) 
+            {
+                throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
             }
             else
-            {
-                console.log(interpretations)
-                throw new Error("ERROR 0005: Unable to parse reify source code.")
-
+            { 
+                interpretations[0].gist.forEach(statement=> new reify.classes.fact(statement))
             }
-
-
-			
-
-		}
-
-		get prepositions(){return Object.keys(this).slice(2)}
-		get verb(){return Object.keys(this)[1]}
-
-	},
-	reify.proxies.newless
-)
-reify.fact=reify.facts //fact is a synonym for facts
+        }
+        else
+        {
+            console.log(interpretations)
+            throw new Error("ERROR 0005: Unable to parse reify source code.")
+        }
+        return this
+    }
 
 // #endregion
 
@@ -2735,9 +2659,58 @@ reify.proxies.noun=
 	}
 	
 }
-reify.noun=new Proxy
-(
-	class Noun
+reify.noun=function(literals, ...expressions) {return new reify.classes.noun(literals,...expressions)}
+// #endregion
+
+// #region classes
+
+
+reify.classes.fact= class Fact
+    {
+        constructor(statement)
+        {
+    
+            let fact=reify.net[statement.id]
+
+            if (fact) //update existing fact.
+            {
+                history[reify.turn]={clock:reify.clock,tense:fact.tense,mood:fact.mood,polarity:fact.polarity }
+                fact.tense=statement.tense
+                fact.mood=statement.mood
+                fact.polarity=statement.polarity
+               
+            }
+            else
+            {
+                Object.defineProperty(this, "id",{value:statement.id,enumerable:false})
+                Object.defineProperty(this, "predicate",{value:statement.predicate,enumerable:false})
+                Object.defineProperty(this, "tense",{value:statement.tense,enumerable:false})
+                Object.defineProperty(this, "mood",{value:statement.mood,enumerable:false})
+                Object.defineProperty(this, "polarity",{value:statement.polarity,enumerable:false})
+                Object.defineProperty(this, "nouns",{value:statement.nouns,enumerable:false})
+                Object.defineProperty(this, "history",{value:[],enumerable:false})
+                this.history[reify.turn]={clock:reify.clock,tense:this.tense,mood:this.mood,polarity:this.polarity }
+                fact=reify.net[statement.id]=this
+                
+            }
+             fact.nouns.forEach((noun,index)=>
+            {
+                let i=noun._indexes
+                if (i[index] instanceof reify.Reality) i[index].add(this)
+                else i[index]=new reify.Reality(this)
+            })
+            fact.predicate._index.add(this)
+            return fact
+        }
+        get subject(){return this.nouns[0]}
+        get directObject(){return this.nouns[1]}
+        get indirectObject(){return this.nouns[2]}
+        get verb(){return this.predicate.verb}
+        get prepositions(){return this.predicate.prepositions}
+        //get prepositions(){return Object.keys(this).slice(2)}
+        //get verb(){return Object.keys(this)[1]}
+    }
+reify.classes.noun=class Noun
 	{
 		constructor(literals, ...expressions) // maybe template literal notation or function notation
 		{
@@ -2782,43 +2755,28 @@ reify.noun=new Proxy
 			return this
 		}
 
-	},
-	reify.proxies.newless	
-)
-// #endregion
-
-// #region predicate
-
-//predicate`connect to on north`.adverb`one-way`.reify(reality=>reality).select(reality||nounList=>reality).check(reality||nounList=>proposition)
-
-//oak door connects bar to foyer on north.  
-//adverbs supply hints for processing reify and select
-//magic portal connects bar to foyer on north one-way. -- adverbs may appear at end
-//magic portal one-way connects bar to foyer on north. -- adverbs may appear before verb
-//twisty passage one-way connects bar to foyer on north. twisty passage one-way connects foyer to bar on east. 
-
-//reify.lang.es("verb") --third person present tense: she leaps.
-
+	}
 reify.classes.Predicate=class Predicate
 {
 	constructor(literals, ...expressions) // maybe template literal notation or function notation
 	{
 		let name=reify.toString(literals, ...expressions)
 		let p_strings=name.split(" ")
-		Object.defineProperty(this, "id",{value:reify.formatId(name),enumerable:false})
-		//Object.defineProperty(this, "name",{value:reify.formatName(this.id),enumerable:false,writable:true})
+		Object.defineProperty(this, "id",{value:name,enumerable:false})
 		Object.defineProperty(this, "verb",{value:reify.formatName(p_strings[0]),enumerable:false,writable:false})
-		Object.defineProperty(this, "prepositions",{value:p_strings.splice(1),enumerable:false,writable:false})
+		Object.defineProperty(this, "prepositions",{value:p_strings.splice(1)??[],enumerable:false,writable:false})
 		Object.defineProperty(this, "mutual",{value:false,enumerable:false})
 		Object.defineProperty(this, "exclusive",{value:false,enumerable:false})
 		Object.defineProperty(this, "_index",{value:new reify.Reality(),enumerable:false,writable:true})
+        Object.defineProperty(this, "copular",{value:false,enumerable:false})
 
-		reify.lang.conjugatePredicate(this)
+		this.#conjugate(this.verb,false)
 		this.prepositions.forEach(preposition=>
 		{
 			reify.glossary.register(preposition).as({part:"preposition", key:preposition, predicate:this})
 		})	
-		return new Proxy(this,reify.proxies.predicate)		
+		//return new Proxy(this,reify.proxies.predicate)		for getter/setters do we need this?
+        return this
 	}
 
 	adverb(literals, ...expressions)
@@ -2827,55 +2785,75 @@ reify.classes.Predicate=class Predicate
 		return this
 
 	}
-	aka(literals, ...expressions)
+	aka(literals, ...expressions)  //To DO: delete because predicates are different from commands?
 	{
-		let verb=reify.toString(literals, ...expressions)
-		reify.lang.conjugate(verb,"active","affirmative")
-			.concat(reify.lang.conjugate(verb,"active","negative"))
-			.forEach(conjugation=>
-			{
-				let name=conjugation.name
-				delete conjugation.name
-				conjugation.predicate=this
-				reify.glossary.register(name).as(conjugation)
-			})
-            reify.adjective(reify.lang.ing(verb)).describes(noun=>noun._indexes[0].filter(this._index).size>0)
-            reify.adjective(reify.lang.ed(verb)).describes(noun=>noun._indexes[1].filter(this._index).size>0)
+		this.#conjugate(reify.toString(literals, ...expressions),false)
 		return this
 	}
-	check(reality)
+    check(reality)
 	{
 		//TO DO: use reality to find facts in reify.net that match 
 
 		if (reality.size>0) return true
 		return false
 	}
-	/*  //Can we get away with no passive voice for the DSL?
-    passive(literals, ...expressions)
+    #conjugate(verb,converse)
+    {
+        let particles=verb.split(" ")
+        if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" or passive constructions for example 
+        {
+
+            let complement=" "+particles.slice(1).join(" ")
+            reify.glossary.register("is"+complement)//foyer is north of cloakroom
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+            reify.glossary.register("are"+complement)//trees are north of meadow
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("are not"+complement)//trees are not north of meadow
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+            reify.glossary.register("was"+complement)//foyer was north of cloakroom
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("was not"+complement)//foyer was north of cloakroom
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse})
+            reify.glossary.register("were"+complement)//trees were north of meadow
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("were not"+complement)//trees were not north of meadow
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse}) 
+        }
+        else
+        {
+            
+            reify.glossary.register(reify.lang.es(verb)). //player carries ring
+                as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("does not "+verb) //player does not carry ring
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+            reify.glossary.register(verb) //people carry treasure chest
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("do not "+verb) //people do not carry treasure chest
+                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+            reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+            reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
+                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse})
+
+        }
+
+        //carried ring endangers the plan  //adjective
+        //carrying player endangers the plan //adjective
+
+        reify.adjective(reify.lang.ing(verb)).describes(noun=>noun._indexes[0].filter(predicate._index).size>0)
+        reify.adjective(reify.lang.ed(verb)).describes(noun=>noun._indexes[1].filter(predicate._index).size>0)
+
+        return this
+    }
+	
+    converse(literals, ...expressions)
 	{
-		let verb=reify.toString(literals, ...expressions)
-		reify.lang.conjugate(verb,"passive","affirmative")
-			.concat(reify.lang.conjugate(verb,"passive","negative"))
-			.forEach(conjugation=>
-			{
-				let name=conjugation.name
-				delete conjugation.name
-				conjugation.predicate=this
-				reify.glossary.register(name).as(conjugation)
-			})
+		this.#conjugate(reify.toString(literals, ...expressions),true)
+		return this
 	}
-    */
-	induce(statement) //{predicate, tense, mood, voice, polarity, arguments, nouns}
-	{
-        //induce is used for supplementary facts associated with the statement
-        //set statement.valid=false if supplementary facts replace are meant to replace fact generated from statement
-        //reify.fact`implied fact`
-        //reify.fact`implied fact`
     
-
-        return statement
-
-	}
 	select(reality)
 	{
 		//filter reality by predicate. Typically overridden for virtual predicates
@@ -2884,7 +2862,7 @@ reify.classes.Predicate=class Predicate
 		return reality
 	}
 }
-reify.proxies.predicate=
+/*reify.proxies.predicate=  //To Do: Remove not used
 {	
 	//use setter/getter for properties
 	//predicate.property() returns value of property predicate.property(value) sets property with value
@@ -2898,273 +2876,102 @@ reify.proxies.predicate=
 			return receiver
 		}
 	}	
+}*/
+
+//reify.predicate=new Proxy(reify.classes.Predicate,reify.proxies.newless)
+reify.predicate=function(literals, ...expressions)
+{
+   return new reify.classes.Predicate(literals, ...expressions)
 }
 
-reify.predicate=new Proxy(reify.classes.Predicate,reify.proxies.newless)
 // #endregion
 
 // #region reality
-reify.Reality=new Proxy
-(
-	class Reality 
-	{
-		
-		constructor(...facts)  //Realities can be made from facts or other realities
-		{
-			Object.defineProperty(this, "placeholder",{value:{},enumerable:false,writable:true})
-			Object.defineProperty(this, "set",{value:new Set(),enumerable:false,writable:true})
-            facts.forEach(fact=>
+reify.Reality=class Reality 
+{
+    
+    constructor(...facts)  //Realities can be made from facts or other realities
+    {
+        Object.defineProperty(this, "placeholder",{value:{},enumerable:false,writable:true})
+        Object.defineProperty(this, "set",{value:new Set(),enumerable:false,writable:true})
+        facts.forEach(fact=>
+        {
+            if (fact instanceof reify.Reality) this.set=this.set.union(fact.set)
+            else if (fact instanceof reify.classes.fact) this.set.add(fact)
+
+        })
+        return this
+
+    }
+    add(...items)
+    {
+        items.forEach(item=>
+        {
+            if (item instanceof reify.classes.fact)  this.set.add(item)
+            else if (item instanceof reify.Reality) this.set=this.set.union(item.set)
+
+        })
+        return this
+    }
+
+    filter(...realities) //intersection of two realities sets
+    {
+        realities.forEach(reality=>
+        {
+            this.set.intersection(reality.set)
+        
+        })
+        
+        return this
+    }
+    get isEmpty(){return this.set.size===0}
+    get size(){return this.set.size}
+    subtract(...items)
+    {
+        if (item instanceof reify.classes.fact)  this.set.delete(item)
+        else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
+        return this
+    }
+    forEach(task)
+    {
+        this.set.forEach(task)
+        return this
+    }
+    now(literals, ...expressions)
+    {
+        // for each fact, replace each placeholder with noun id 
+        // reify each statement
+        // To Do: process resulting reality through plot.
+        //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
+        //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
+        let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
+        this.set.forEach(fact=>
+        {
+            let revisedSource=source.map(text=>
             {
-                if (fact instanceof reify.Reality) this.set=this.set.union(fact.set)
-                else if (fact instanceof reify.fact) this.set.add(fact)
-
-            })
-            return this
-
-		}
-		add(...items)
-		{
-			items.forEach(item=>
-			{
-				if (item instanceof reify.fact)  this.set.add(item)
-				else if (item instanceof reify.Reality) this.set=this.set.union(item.set)
-
-			})
-			return this
-		}
-
-		filter(...realities) //intersection of two realities sets
-		{
-			realities.forEach(reality=>
-			{
-			    this.set.intersection(reality.set)
-			
-			})
-			
-			return this
-		}
-        get isEmpty(){return this.set.size===0}
-        get size(){return this.set.size}
-        subtract(...items)
-        {
-            if (item instanceof reify.fact)  this.set.delete(item)
-			else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
-            return this
-        }
-        forEach(task)
-        {
-            this.set.forEach(task)
-            return this
-        }
-        now(literals, ...expressions)
-        {
-            // for each fact, replace each placeholder with noun id 
-            // reify each statement
-            // To Do: process resulting reality through plot.
-            //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
-            //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
-            let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
-            this.set.forEach(fact=>
-            {
-                let revisedSource=source.map(text=>
+                if (text.startsWith("[") && text.endsWith("]"))
                 {
-                    if (text.startsWith("[") && text.endsWith("]"))
+                    text=text.slice(1,-1)
+                    let noun=this.placeholder[text]
+                    if (noun)
                     {
-                        text=text.slice(1,-1)
-                        let noun=this.placeholder[text]
-                        if (noun)
-                        {
-                            text= fact.nouns[noun.index].id
-                        }
+                        text= fact.nouns[noun.index].id
                     }
-                    return text
-                }).join("")
-               console.log(reify.facts(revisedSource))
-            })
-                
-            return this
-        }
-	},reify.proxies.newless
-)
+                }
+                return text
+            }).join("")
+            console.log(reify.facts(revisedSource))
+        })
+            
+        return this
+    }
+}
 // #endregion
 
 // #region dsl
 
 
 /* 
-
-
-
-Test:
-player carries ring that is owned by smeagle.
-player carries ring that is owned by smeagle and that is liked by sarah.
-a rich person, _the_ring_bearer_, carries the ring that is owned by _someone_.
-_the_ring_bearer_ carries the ring that is owned by _someone_.  //acceptable but wordy
-_the_ring_bearer_ carries the owned ring.  //more concise
-_the_ring_bearer_, a person, carries the ring. 
-_the_ring_bearer_, a person, carries an _item_ of jewelry .
-
-A wildcard is used for matching in select statements.  A #placeholder# is used for creating nouns on the fly.
-
-oak door connects bar to foyer on north.  -- implies abuttal implies reciprocal connection foyer to bar on south
-exit connects bar to foyer on north. -- generic exit.
-magic portal one-way connects bar to foyer on north. -- one-way adverb suppresses abuttal and reciprocal connection.
-twisty passage one-way connects bar to foyer on north. twisty passage one-way connects foyer to bar on east.  --two-way connection without reciprocity and abuttal.
-chute one-way connects bar to foyer.  bar abuts foyer on bottom
-
-to do: do we need conditionals or is filter enough? Scenes are if statements maybe just need to AND to coordinating facts?
-to do: should facts be added to the lexicon? part=fact
-
-
-logic:
-
-exp→term {OR term};
-
-term→factor {AND factor};
-
-factor→id;
-
-factor→NOT factor;
-
-factor→LPAREN exp RPAREN;
-
-Left recursion, A=>Aa|b, is equivalent to right recursive
-
-A=>Aa|b //left recursive 
-
-//right recursive
-A=>b C? 
-C=>a C 
-
-subject =>  subject predicate | nounPhrase // left recursive
-
-subject => nounPhrase f
-f =>
-
-subject => nounPhrase subjectPrime
-subjectPrime =>predicate subjectPrime?
-
-
-
-
-
-
-
-EBNF:
-    statements=>statement+
-	statement=>statement period
-    statement=>subject predicate 
-	subject=>statement|nounPhrase
-	predicate=>verb directObject prepositionalPhrase*
-    prepositionalPhrase=>preposition target
-    directObject=>statement|nounPhrase
-    target=>statement|nounPhrase
-    nounPhrase=>article? adjectives* noun restriction
-    restriction=>appositive|relative|appositive comma relative
-    appositive=>comma article? noun
-    relative=>relativizer predicate
-	noun=>lexiconNoun|wildcard|placeholder
-	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
-	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
-    period=/^\./
-    comma=/^\,/
-
-EBNF:
-    statements=>statement+
-	statement=>statement period
-    statement=>subject predicate 
-	subject=>nounClause
-   
-	predicate=>verb directObject prepositionalPhrase*
-    prepositionalPhrase=>preposition target
-    directObject=>nounClause
-    target=>nounClause
-    nounClause=>nounPhrase|fact
-    fact=>gerund directObject prepositionalPhrase*
-    nounPhrase=>article? adjectives* attributive? noun relativeClause*
-    relativeClause=>relativizer predicate
-	noun=>lexiconNoun|wildcard|placeholder
-	wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
-	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
-    period=/^\./
-
-
-Tests:
-
-player carries ring. 
-
-player carries ring that is owned by smeagle.
-    subject predicate
-    nounPhrase(player) verb(carries) directObject(ring that is owned by smeagle)
-    nounPhrase(player) verb(carries) nounPhrase(ring that is owned by smeagle)
-    nounPhrase(ring that is owned by smeagle)=>noun(ring) relativize(that) predicate(is owned by smeagle)
-
-
-player carries ring that is owned by smeagle and that is liked by sarah.
-    to do: logic parser
-
-a rich person, _the_ring_bearer_, carries the ring that is owned by _someone_.
-    article(a) adjective (rich) adjective(person) noun(_the_ring_bearer), verb(carries) nounPhrase(ring that is owned by smeagle)
-
-_the_ring_bearer_ carries the ring that is owned by _someone_.  //acceptable but wordy.  Makes [someone] available for use.
-_the_ring_bearer_ carries the owned ring.  //more concise
-
-
-
-Bob carries the ring. => bob,carry,ring
-
-Alice knows bob is carrying the ring. => alice, know, (bob, carry ring) need to implement "is verbing"
-Wrong: alice knows bob carries the ring. //Should this be allowed when the fact is the indirect object?  alice, know, (bob, carry ring)
-=>subject predicate
-
-predicate=>verb directObject
-directObject=>nounClause
-nounClause=>subject predicate direct Object
-
-
-Wrong: alice knows that bob carries the ring. //looks too much like restrictive clause
-
-
-
-
-
-
-
-
-
-
-
-Bob carrying the ring endangers Charles. => 
-    subject=>gerundPhrase
-    gerundPhrase=>nounPhrase gerund gerundComplement
-
-
-Bob carrying the ring compromises Della working on the project. 
-subject=>gerundPhrase
-object=>gerundPhrase
-
-
-_someone_, who is a person and who wears a hat, carrying the ring endangers Charles.
-    matches fact: (Bob~carries~ring)~endangers~charles
-_someone_ who is a person and who wears a hat and who carries the ring endangers Charles.
-    matches fact: Bob~endangers~charles
-
-//player carries ring.
-//player does not carry ring.
-//some people carry treasure chest.
-//some people do not carry treasure chest.
-//player carried ring.
-//player did not carry ring.
-//the player carrying the ring endangers the plan.
-//the player not carrying the ring endangers the plan.
-//the player having carried the ring endangers the plan.
-//the player having not carried the ring endangers the plan.
-//the carried ring endangers the plan.
-//the carrying player endangers the plan.
-
-
-
-
 
 EBNF:
 
@@ -3187,39 +2994,158 @@ EBNF:
     attributive=>lexiconAttributive
     relativeClauses=>relativizer predicate
 	noun=>lexiconNoun|wildcard|placeholder
-	predicate=>verb directObject prepositionalPhrase*
+	predicate=>verb directObject prepositionalPhrases*
     verb=>lexiconVerb
-    prepositionalPhrase=>preposition target
+    prepositionalPhrases=>preposition target
     directObject=>nounClause
     target=>nounClause
 
+    
     statements=>(statement period)+  //create one or more facts
     statement=>subject predicate 
-	subject=>nounClause
-    nounClause=>fact | nounPhrase
-    fact=>leftBracket nounPhrase gerund directObject prepositionalPhrase* rightBracket
-    nounPhrase=>noun
+	subject=>fact|noun
+    fact=>leftBracket argument gerund directObject prepositionalPhrases* rightBracket
     noun=>lexiconNoun|placeholder
 	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
-    predicate=>verb directObject prepositionalPhrase*
-    prepositionalPhrase=>preposition target
-    directObject=>nounClause
-    target=>nounClause
+    predicate=>verb directObject prepositionalPhrases*
+    prepositionalPhrases=>preposition target
+    directObject=fact |noun | adjective //adjective valid for copular predicates only
+    target=>fact|noun
 
-    condition => term | condition or term
-    term => factor | term and factor | grouping
-    factor => negation| selection | grouping
-    negation =>not selection | not grouping
-    grouping=> leftParen condition rightParen
+    condition => term termOperations*
+    termOperations=> orOperator term
+    term => factor factorOperations*
+    factorOperations=> andOperator factor
+    factor => selection
+    factor=>notOperator factor
+    factor=>leftParen condition rightParen
     
 */
 
 reify.dsl={}
-let dsl=reify.dsl
-dsl.predicate=reify.Rule()
 
-dsl.nounPhrase=reify.Rule()
-    .snip("adjectives").snip("attributive").snip("noun",reify.dsl.noun).snip("relativeClause") 
+
+//Build condition parser  -- apply logical operators to selections to arrive at a truth value. 
+
+
+
+reify.dsl.condition=reify.Rule()
+reify.dsl.condition.snip("term").snip("termOperations")
+reify.dsl.condition.term.snip("factor").snip("factorOperations")
+reify.dsl.condition.termOperations.snip("orOperator").snip("term",reify.dsl.condition.term)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.condition.termOperations.orOperator.configure({filter:(definition)=>definition?.part==="orOperator"})
+reify.dsl.condition.term.factorOperations.snip("andOperator").snip("term",reify.dsl.factor)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.condition.term.factorOperations.andOperator.configure({filter:(definition)=>definition?.part==="andOperator"})
+reify.dsl.condition.term.factor
+    .snip(0,reify.dsl.selection)
+    .snip(1)
+    .snip(2)
+reify.dsl.condition.term.factor[1].snip("notOperator").snip("factor",reify.dsl.condition.term.factor)
+reify.dsl.condition.term.factor[1].notOperator.configure({filter:(definition)=>definition?.part==="notOperator"})
+reify.dsl.condition.term.factor[2].snip("leftParen").snip("condition",reify.dsl.condition).snip("rightParen")
+reify.dsl.condition.term.factor[2].leftParen.configure({regex:/^\(/})
+reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
+
+reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
+
+
+//reusable rules
+
+reify.dsl.noun=reify.Rule().configure({mode:reify.Rule.apt})
+	.snip(0)
+	.snip(1) //placeholder
+reify.dsl.noun[0]
+    .configure({filter:(definition)=>definition?.part==="noun"})	
+reify.dsl.noun[1].configure({regex:/^#[a-zA-Z]\w*/})
+reify.dsl.preposition=reify.Rule().configure({filter:(definition)=>definition?.part==="preposition"})
+reify.dsl.verb=reify.Rule().configure({filter:(definition)=>definition?.part==="verb"})
+
+
+/*statement grammar 
+    statements=>(statement period)+  //create one or more facts
+    statement=>subject verb directObject prepositionalPhrases*
+    subject=>lexiconNoun|placeholder
+    placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    prepositionalPhrases=>preposition target
+    directObject noun | adjective //adjective valid for copular predicates only
+    target=>noun  
+*/
+reify.dsl.statements=reify.Rule()
+    .snip("statement").snip("period")
+    .configure({maximum:Infinity, semantics:interpretation=>
+    {
+        interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
+        return true
+    }})
+reify.dsl.statements.period.configure({regex:/^\./,lax:true})
+reify.dsl.statements.statement=reify.Rule().snip("subject",reify.dsl.noun).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.noun).snip("prepositionalPhrases")
+    .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
+    {
+        let gist =interpretation.gist
+        let directObject=gist.directObject
+        let verb=gist.verb.definition
+        let predicate=verb.predicate
+        let prepositionalPhrases=gist.prepositionalPhrases??[]
+        let prepositions=prepositionalPhrases.map(preposition=>preposition.definition.key)
+        let argumentList=[]
+        //Check if prepositions match
+        if (prepositions.length !== predicate.prepositions.length) return false
+        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
+        if (predicate.converse)
+        {
+            argumentList.push(reify.net[directObject.definition.key])
+            argumentList.push(reify.net[gist.subject.definition.key])
+        }
+        else
+        {
+            argumentList.push(reify.net[gist.subject.definition.key])
+            argumentList.push(reify.net[directObject.definition.key])
+        }
+        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push(reify.net[phrase.target.definition.key]))
+
+        let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)+" "+argumentList[1].id
+        for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
+        id="["+id+"]"
+        interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,nouns:argumentList}
+        return true
+
+    }})
+reify.dsl.statements.statement.prepositionalPhrases
+    .configure({minimum:0,maximum:Infinity,greedy:true})
+    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.noun)
+reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/^[\s\,]+/ })
+
+
+/*statement grammar 
+    statements=>(statement period)+  //create one or more facts
+    statement=>subject verb directObject prepositionalPhrases*
+    subject=>lexiconNoun|placeholder
+    placeholder=>^#[a-zA-Z]\w*
+    prepositionalPhrases=>preposition target
+    directObject noun | adjective //adjective valid for copular predicates only
+    target=>noun  
+*/
+
+
+/*Selection grammar
+
+    selections=>(selection period)+ //select existing facts into a reality
+    selection=subject verb directObject prepositionalPhrases*
+	subject=>nounClause
+    nounClause=>adjectives* noun relativeClauses*  //to do: make sure kind generates an adjective for the kind.  I think it does
+    adjectives=>lexiconAdjective
+    relativeClauses=>relativizer verb directObject prepositionalPhrases*
+	noun=>lexiconNoun|wildcard|placeholder  //wildcard is the form _wildcard_name_ placeholder is of the form #wildcard_name
+	verb=>lexiconVerb
+    prepositionalPhrases=>preposition target
+    directObject=>nounClause
+    target=>nounClause 
+*/
+reify.dsl.selectionNounClause=reify.Rule()
+reify.dsl.selectionPredicate=reify.Rule().snip("verb").snip("directObject",reify.dsl.selectionNounClause).snip("prepositionalPhrases")
+reify.dsl.selectionNounPhrase=reify.Rule().snip("adjectives").snip("attributive").snip("noun").snip("relativeClause") 
     .configure({semantics:interpretation=>
     {
         const definition=interpretation.gist.noun.definition
@@ -3229,50 +3155,46 @@ dsl.nounPhrase=reify.Rule()
 
         return true
     }})
-dsl.nounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
-dsl.nounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
-dsl.nounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
+reify.dsl.selectionNounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
+reify.dsl.selectionNounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
+reify.dsl.selectionNounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
 	.snip(0)
-	.snip(1,reify.dsl.placeholder)
-	.snip(2,reify.dsl.wildcard)
-dsl.nounPhrase.noun[0]
+	.snip(1)
+	.snip(2)
+reify.dsl.selectionNounPhrase.noun[0]
     .configure({filter:(definition)=>definition?.part==="noun"})	
-dsl.nounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
-dsl.nounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
-
-dsl.nounPhrase.relativeClause
-    .snip("relativizer").snip("predicate",dsl.predicate)
+reify.dsl.selectionNounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
+reify.dsl.selectionNounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
+reify.dsl.selectionNounPhrase.relativeClause
+    .snip("relativizer").snip("predicate",reify.dsl.selectionPredicate)
     .configure({minimum:0})
-dsl.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
+reify.dsl.selectionNounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
 
-
-dsl.prepositionalPhrases=reify.Rule()
-	.snip("preposition").snip("target",dsl.nounClause)
-    .configure({minimum:0,maximum:Infinity,greedy:true})
-dsl.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
-
-dsl.nounClause=reify.Rule().configure({mode:reify.Rule.apt})
-
+reify.dsl.selectionNounClause.configure({mode:reify.Rule.apt})
     .snip(0) //fact
-    .snip(1,dsl.nounPhrase)
-
-
-dsl.nounClause[0] //fact
-    .snip("leftBracket").snip("subject",dsl.nounClause).snip("gerund").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases).snip("rightBracket")
+    .snip(1,reify.dsl.selectionNounPhrase)
+reify.dsl.selectionNounClause[0] //fact
+    .snip("leftBracket").snip("subject",reify.dsl.selectionNounClause).snip("gerund").snip("directObject",reify.dsl.selectionNounClause).snip("prepositionalPhrases",reify.dsl.selectionPredicate.prepositionalPhrases).snip("rightBracket")
     .configure({minimum:0})
-dsl.nounClause[0].gerund.configure({filter:(definition)=>definition?.part==="gerund"})
-dsl.nounClause[0].leftBracket.configure({regex:/^\[/,lax:true})
-dsl.nounClause[0].rightBracket.configure({regex:/^\]/,lax:true})
+reify.dsl.selectionNounClause[0].gerund.configure({filter:(definition)=>definition?.part==="gerund"})
+reify.dsl.selectionNounClause[0].leftBracket.configure({regex:/^\[/,lax:true})
+reify.dsl.selectionNounClause[0].rightBracket.configure({regex:/^\]/,lax:true})
 
-dsl.statements=reify.Rule()
-    .snip("statement").snip("period")
+
+reify.dsl.selectionPredicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
+reify.dsl.selectionPredicate.prepositionalPhrases.snip("preposition").snip("target",reify.dsl.selectionNounClause)
+    .configure({minimum:0,maximum:Infinity,greedy:true})
+reify.dsl.selectionPredicate.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
+
+reify.dsl.selections=reify.Rule()
+    .snip("selection").snip("period")
     .configure({maximum:Infinity, semantics:interpretation=>
     {
         interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
         return true
     }})
-dsl.statements.statement
-    .snip("subject",reify.dsl.nounClause).snip("predicate",dsl.predicate)
+reify.dsl.selections.selection
+    .snip("subject",reify.dsl.selectionNounClause).snip("predicate",reify.dsl.selectionPredicate)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
         let verb=interpretation.gist.predicate.verb.definition
@@ -3285,21 +3207,25 @@ dsl.statements.statement
         return true
 
     }})
-dsl.predicate
-    .snip("verb").snip("directObject",dsl.nounClause).snip("prepositionalPhrases",dsl.prepositionalPhrases)
-dsl.predicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
+reify.dsl.selections.period.configure({regex:/^\./,lax:true})
+
+reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selections, boundary:/^[\.]/,separator:/^[\s\,]+/ })
 
 
-dsl.statements.period.configure({regex:/^\./,lax:true})
 
-reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/[\s\,]+/ })
+
+
+
+
+
+
 
 
 reify.select=function(literals, ...expressions)
 {
 	var source=reify.toString(literals, ...expressions)
 	
-	let {success,interpretations}=reify.dslParser.analyze(source)
+	let {success,interpretations}=reify.selectionParser.analyze(source)
 	if (success)
 	{
 		
@@ -3316,11 +3242,7 @@ reify.select=function(literals, ...expressions)
             const reality=new reify.Reality()
             const placeholder={}
             const statement=interpretations[0].gist[0]
-            const predicate=statement.predicate
-            /* Can we get away with no passive voice
-            //statements maybe in active or passive voice, but facts are always in active voice.
-            if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
-            */
+
             statement.voice===reify.lang.active
             statement.arguments.forEach((argument,index)=>
             {
@@ -3359,14 +3281,14 @@ reify.select=function(literals, ...expressions)
 
 }
 
-reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements})
+//obsolete-- reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements})
 
 
 reify.select=function(literals, ...expressions)
 {
 	var source=reify.toString(literals, ...expressions)
 	
-	let {success,interpretations}=reify.dslParser.analyze(source)
+	let {success,interpretations}=reify.selectionParser.analyze(source)
 	if (success)
 	{
 		
@@ -3385,9 +3307,12 @@ reify.select=function(literals, ...expressions)
             const statement=interpretations[0].gist[0]
             const predicate=statement.predicate
             /* Can we get away with no passive voice in DSL?
-            //statements maybe in active or passive voice, but facts are always in active voice.
-            if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
+            No, passive voice used for abuttal: `foyer is north of cloakroom.` Has a passive form `cloakroom is south of foyer.` 
+
+            statements maybe in active or passive voice, but facts are always in active voice.
+     
             */
+            if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
             statement.voice===reify.lang.active
             statement.arguments.forEach((argument,index)=>
             {
@@ -3444,3 +3369,6 @@ var errors=
 
 }
 // #end region
+
+
+

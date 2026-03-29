@@ -6,10 +6,18 @@
         <p>test reify</p>
        
        <script src="reify.js"></script>
-       <script src="en-us.js"></script>
+       <script src="reify-en-us.js"></script>
        <script>
         const { noun, adjective, $:net, predicate, facts, select } = reify
         const _=reify.template._
+       // predicate`give to`
+        predicate`carry`.converse`be carried by`
+       /* predicate`wear`.converse`be worn by`
+        predicate`know_about`.converse`be known about by`
+        predicate`endanger`.converse`be endangered by`
+        predicate`worry`.converse`be worried by`
+        predicate`be east of`.converse`be west of`
+        predicate`be acquaintance of`.converse`be acquaintance of`*/
         adjective`shiny,dull`.describes`surface` 
         noun`direction`.direction(true)
         noun`north`.kind`direction`
@@ -32,27 +40,57 @@
             .kind`room`
             .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
 
-        predicate`give to`
-        predicate`carry`
-        predicate`wear`
-        predicate`know about`
-        predicate`endanger`
+        
+       // predicate`work with`.mutually(true)
 
-    // facts`player carries ring.`
+       // facts`player carries ring. player does not carry ring. some people carry treasure chest. some people do not carry treasure chest. player carried ring. player did not carry ring. [The player carrying the ring] endangers the plan. [the player not carrying the ring] endangers the plan. [the player having carried the ring] endangers the plan. [the player having not carried the ring] endangers the plan. Alice knows about [the player carrying the ring]. Alice knows about [the player not carrying the ring]. the carried ring endangers the plan. [[the player carrying the ring] endangering the plan] worries alice. [the player carrying [the ring endangering the plan]] worries alice.`
+    //facts`player carries ring.`
+  facts`ring is carried by player.`
+    
+
+    //facts`player carries ring.`
     //facts`player does not carry ring.`
     //facts`some people carry treasure chest.`
     //facts`some people do not carry treasure chest.`
     //facts`player carried ring.`
     //facts`player did not carry ring.`
-    
-    facts`the player carrying the ring endangers the plan.`
-    //facts`the player not carrying the ring endangers the plan.`
-    //facts`the player having carried the ring endangers the plan.`
-    //facts`the player having not carried the ring endangers the plan.`
-    //facts`Alice knows about the player carrying the ring.`
-    //facts`Alice knows about the player not carrying the ring.`
+
+
+
+/*  gerund phrases are placed in square brackets to avoid ambiguity.
+Facts about facts is abandoned now. May be replaced with implications which are selections that set a flag or maybe they are just the same as scene fragment. 
+bracket notation [wildcard name] will now be used for placeholders instead of #wildcard name#
+
+    //facts`[The player carrying the ring] endangers the plan.`    
+    //facts`[the player not carrying the ring] endangers the plan.`
+    //facts`[the player having carried the ring endangers] the plan.`
+    //facts`[the player having not carried the ring] endangers the plan.`
+    //facts`Alice knows about [the player carrying the ring].`
+    //facts`Alice knows about [the player not carrying the ring].`
     //facts`the carried ring endangers the plan  //adjective.`
-    //facts`the carrying player endangers the plan //adjective.`
+    //facts`the carrying player endangers the plan //adjective.
+    //facts`[[the player carrying the ring] endangering the plan] worries alice.`
+    //facts`[the player carrying [the ring endangering the plan] worries alice.`
+    
+    
+    facts`[[the player carrying the ring] endangering the plan] worries alice.` 
+    means the fact that the player carries the ring is what endangers the plan and therefore worries alice.  The ring is harmless in other circumstances.
+
+    facts`[the player carrying [the ring endangering the plan]] worries alice.`
+
+    Just like nouns, a fact must be pre-existing (negative polarity is ok.) before it can be used to create another fact. If the fact is missing the creation statement is still successful.  It just doesn't create the fact. So, it's an implied condition.
+
+    Placeholders can be used in gerund phrases.
+
+    */
+
+   
+    
+
+
+     
+
+
 
        </script>
     </body>
