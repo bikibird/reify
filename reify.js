@@ -766,7 +766,10 @@ reify.Rule.prototype.parse =function(text,lexicon,errors,separator,boundary)
 							else {results=results.concat(revisedCandidates)}
 						}
 					}
-					if (results.length>0){break} //found something that works, stop looking.
+					if (results.length>0)
+                    {
+                        break
+                    } //found something that works, stop looking.
 					revisedCandidates=candidates.slice(0)//try again with next key.	
 				}
 				break
@@ -2545,14 +2548,8 @@ reify.adjective=function(literals, ...expressions)
             }
 			if (type==="enum")
 			{
-				reify.glossary.register(adjective).as({part: "adjective",key:property, value:noun=>{
-                    if (noun[property]===index) return true
-                    else return false
-                }})
-                reify.glossary.register("not " + adjective).as({part: "adjective",key:property, value:noun=>{
-                    if (noun[property]===index) return false
-                    else return true
-                }})
+				reify.glossary.register(adjective).as({part: "adjective",key:property, value:noun=>noun[property]===index
+                })
 			}
 			else if(type=="boolean")
 			{
@@ -2561,10 +2558,6 @@ reify.adjective=function(literals, ...expressions)
 				{
 					reify.glossary.register(adjOpposite).as({part: "adjective",key:adjOpposite,value:noun=>noun[property]===false})
 				}
-                else
-                {
-                    reify.glossary.register("not "+adjective).as({part: "adjective",key:adjOpposite,value:noun=>noun[property]===false})
-                }
 			}
 		})
 		return reify
@@ -2980,7 +2973,7 @@ EBNF:
     leftParen=>/^\(/
     rightParen=>/^\)/
     period=>/^\./
-    wildcard=>/^_[a-zA-Z]\w*[a-zA-Z _]_/
+    wildcard=>/^_[a-zA-Z]\w*_/
 	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
 
     selections=>(selection period)+ //select existing facts into a reality
@@ -3029,26 +3022,7 @@ reify.dsl={}
 
 
 
-reify.dsl.condition=reify.Rule()
-reify.dsl.condition.snip("term").snip("termOperations")
-reify.dsl.condition.term.snip("factor").snip("factorOperations")
-reify.dsl.condition.termOperations.snip("orOperator").snip("term",reify.dsl.condition.term)
-    .configure({minimum:0,maximum:Infinity})
-reify.dsl.condition.termOperations.orOperator.configure({filter:(definition)=>definition?.part==="orOperator"})
-reify.dsl.condition.term.factorOperations.snip("andOperator").snip("term",reify.dsl.factor)
-    .configure({minimum:0,maximum:Infinity})
-reify.dsl.condition.term.factorOperations.andOperator.configure({filter:(definition)=>definition?.part==="andOperator"})
-reify.dsl.condition.term.factor
-    .snip(0,reify.dsl.selection)
-    .snip(1)
-    .snip(2)
-reify.dsl.condition.term.factor[1].snip("notOperator").snip("factor",reify.dsl.condition.term.factor)
-reify.dsl.condition.term.factor[1].notOperator.configure({filter:(definition)=>definition?.part==="notOperator"})
-reify.dsl.condition.term.factor[2].snip("leftParen").snip("condition",reify.dsl.condition).snip("rightParen")
-reify.dsl.condition.term.factor[2].leftParen.configure({regex:/^\(/})
-reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
 
-reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
 
 
 //reusable rules
@@ -3067,7 +3041,7 @@ reify.dsl.verb=reify.Rule().configure({filter:(definition)=>definition?.part==="
     statements=>(statement period)+  //create one or more facts
     statement=>subject verb directObject prepositionalPhrases*
     subject=>lexiconNoun|placeholder
-    placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    placeholder=>/^#[a-zA-Z]\w*[a-zA-Z]/
     prepositionalPhrases=>preposition target
     directObject noun | adjective //adjective valid for copular predicates only
     target=>noun  
@@ -3129,21 +3103,206 @@ reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl
 */
 
 
-/*Selection grammar
+/*  condition grammar
+    condition => term termOperations*
+    termOperations=> orOperator term
+    term => factor factorOperations*
+    factorOperations=> andOperator factor
+    factor => selection
+    factor=>notOperator factor
+    factor=>leftParen condition rightParen
+*/
 
-    selections=>(selection period)+ //select existing facts into a reality
-    selection=subject verb directObject prepositionalPhrases*
+/*Selection grammar
+    selection=subject verb directObject prepositionalPhrases* //select existing facts into a reality
 	subject=>nounClause
-    nounClause=>adjectives* noun relativeClauses*  //to do: make sure kind generates an adjective for the kind.  I think it does
-    adjectives=>lexiconAdjective
+    nounPhrase=>adjectives* noun relativeClauses*  //to do: make sure kind generates an adjective for the kind.  I think it does
+    adjectivePhrase=>lexiconAdjective
     relativeClauses=>relativizer verb directObject prepositionalPhrases*
 	noun=>lexiconNoun|wildcard|placeholder  //wildcard is the form _wildcard_name_ placeholder is of the form #wildcard_name
 	verb=>lexiconVerb
     prepositionalPhrases=>preposition target
     directObject=>nounClause
     target=>nounClause 
+
+    adjectivePhrase => term termOperations*
+    termOperations=> orOperator term
+    term => factor factorOperations*
+    factorOperations=> andOperator factor
+    factor => adjective
+    factor=>notOperator factor
+    factor=>leftParen adjectivePhrase rightParen
+
+
+
 */
-reify.dsl.selectionNounClause=reify.Rule()
+
+
+
+////selection grammar
+reify.dsl.adjective=reify.Rule().configure({filter:(definition)=>definition?.part==="adjective",semantics:interpretation=>
+{
+    interpretation.gist= interpretation.gist.definition.value
+    return true
+}})
+
+reify.dsl.adjectivePhrase=reify.Rule()
+    .snip("term").snip("termOperations")
+    .configure({minimum:0,semantics:interpretation=>
+    {
+        let gist=interpretation.gist
+        let term=gist.term
+        let operations=gist.termOperations??[]
+        operations.forEach(operation=>term=noun=>term || operation.term(noun))
+        interpretation.gist=term
+       console.log(term.toString())
+        return true
+    }})
+reify.dsl.adjectivePhrase.term
+    .snip("factor").snip("factorOperations")
+    .configure({semantics:interpretation=>
+    {
+        let gist=interpretation.gist
+        let term=gist.factor
+        let operations=gist.factorOperations??[]
+        operations.forEach(operation=>term=noun=>term && operation.factor(noun))
+        interpretation.gist=term
+        return true
+    }})
+reify.dsl.adjectivePhrase.termOperations.snip("orOperator").snip("term",reify.dsl.adjectivePhrase.term)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.adjectivePhrase.termOperations.orOperator.configure({filter:(definition)=>definition?.part==="orOperator"})
+reify.dsl.adjectivePhrase.term.factorOperations.snip("andOperator").snip("term",reify.dsl.factor)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.adjectivePhrase.term.factorOperations.andOperator.configure({filter:(definition)=>definition?.part==="andOperator"})
+reify.dsl.adjectivePhrase.term.factor
+    .snip(0,reify.dsl.adjective)
+    .snip(1) //not factor
+    .snip(2) // grouping (adjective phrase)
+    .configure({mode:reify.Rule.apt,semantics:interpretation=>
+    {
+        console.log(interpretation.gist.toString())
+        return true
+    }})
+
+reify.dsl.adjectivePhrase.term.factor[1]
+    .snip("notOperator").snip("factor",reify.dsl.adjectivePhrase.term.factor)
+    .configure({semantics:(interpretation)=>
+    {
+        interpretation.gist=(noun)=>!interpretation.gist.factor()
+        return true
+    }})
+reify.dsl.adjectivePhrase.term.factor[1].notOperator
+    .configure({filter:(definition)=>definition?.part==="notOperator"})
+
+reify.dsl.adjectivePhrase.term.factor[2]
+    .snip("leftParen").snip("adjectivePhrase",reify.dsl.adjectivePhrase).snip("rightParen")
+    .configure({semantics:(interpretation)=>
+    {
+        interpretation.gist= interpretation.gist.adjectivePhrase
+        return true
+    }})
+
+reify.dsl.adjectivePhrase.term.factor[2].leftParen.configure({regex:/^\(/,lax:true})
+reify.dsl.adjectivePhrase.term.factor[2].rightParen.configure({regex:/^\)/,lax:true})
+
+
+
+
+
+
+
+
+
+
+reify.dsl.nounPhrase=reify.Rule()
+   .snip("adjectivePhrase",reify.dsl.adjectivePhrase).snip("noun",reify.dsl.noun.clone()).snip("relativeClause") 
+   .snip("noun",reify.dsl.noun.clone())
+reify.dsl.prepositionalPhrases=reify.Rule()
+    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.nounPhrase)
+    .configure({minimum:0,maximum:Infinity,greedy:true})    
+reify.dsl.nounPhrase.noun.snip(2)
+reify.dsl.nounPhrase.noun[2].configure({regex:/^_[a-zA-Z]\w*_/})
+
+reify.dsl.nounPhrase.relativeClause
+    .snip("relativizer").snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
+    .configure({minimum:0})
+reify.dsl.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
+reify.dsl.selection=reify.Rule().snip("subject",reify.dsl.nounPhrase).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
+.configure({semantics:interpretation=> //Due to wildcards, each selection may involve multiple facts.  
+{
+    let gist =interpretation.gist
+    let directObject=gist.directObject.noun.definition.fuzzy?gist.directObject.noun.definition.match:gist.directObject.noun.definition.key
+    let subject=gist.subject.noun.definition.fuzzy?gist.subject.noun.definition.match:gist.subject.noun.definition.key
+    let verb=gist.verb.definition
+    let predicate=verb.predicate
+    let prepositionalPhrases=gist.prepositionalPhrases??[]
+    let prepositions=prepositionalPhrases.map(preposition=>preposition.definition.key)
+    let argumentList=[]
+    let placeholders={}
+    //Check if prepositions match
+    if (prepositions.length !== predicate.prepositions.length) return false
+    prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
+    if (predicate.converse)
+    {
+        argumentList.push({noun:directObject})
+        argumentList.push({noun:subject})
+        if (subject.startsWith("_"))placeholders.subject=1
+        if (directObject.startsWith("_")) placeholders.directObject=0
+    }
+        
+    else
+    {
+        argumentList.push({noun:subject})
+        argumentList.push({noun:directObject})
+        if (subject.startsWith("_"))placeholders.subject=0
+        if (directObject.startsWith("_")) placeholders.directObject=1
+    }
+    predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({noun:phrase.target.definition.key}))
+
+    let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)+" "+argumentList[1].id
+    for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
+    id="["+id+"]"
+    interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
+    return true
+
+}})
+reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selection,separator:/^[\s\,]+/ })
+
+
+/*  condition grammar
+    condition => term termOperations*
+    termOperations=> orOperator term
+    term => factor factorOperations*
+    factorOperations=> andOperator factor
+    factor => selection
+    factor=>notOperator factor
+    factor=>leftParen condition rightParen
+*/
+
+reify.dsl.condition=reify.Rule()
+reify.dsl.condition.snip("term").snip("termOperations")
+reify.dsl.condition.term.snip("factor").snip("factorOperations")
+reify.dsl.condition.termOperations.snip("orOperator").snip("term",reify.dsl.condition.term)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.condition.termOperations.orOperator.configure({filter:(definition)=>definition?.part==="orOperator"})
+reify.dsl.condition.term.factorOperations.snip("andOperator").snip("term",reify.dsl.factor)
+    .configure({minimum:0,maximum:Infinity})
+reify.dsl.condition.term.factorOperations.andOperator.configure({filter:(definition)=>definition?.part==="andOperator"})
+reify.dsl.condition.term.factor
+    .snip(0,reify.dsl.selection)
+    .snip(1)
+    .snip(2)
+reify.dsl.condition.term.factor[1].snip("notOperator").snip("factor",reify.dsl.condition.term.factor)
+reify.dsl.condition.term.factor[1].notOperator.configure({filter:(definition)=>definition?.part==="notOperator"})
+reify.dsl.condition.term.factor[2].snip("leftParen").snip("condition",reify.dsl.condition).snip("rightParen")
+reify.dsl.condition.term.factor[2].leftParen.configure({regex:/^\(/})
+reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
+
+reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
+
+
+/*reify.dsl.selectionNounClause=reify.Rule()
 reify.dsl.selectionPredicate=reify.Rule().snip("verb").snip("directObject",reify.dsl.selectionNounClause).snip("prepositionalPhrases")
 reify.dsl.selectionNounPhrase=reify.Rule().snip("adjectives").snip("attributive").snip("noun").snip("relativeClause") 
     .configure({semantics:interpretation=>
@@ -3207,9 +3366,7 @@ reify.dsl.selections.selection
         return true
 
     }})
-reify.dsl.selections.period.configure({regex:/^\./,lax:true})
-
-reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selections, boundary:/^[\.]/,separator:/^[\s\,]+/ })
+reify.dsl.selections.period.configure({regex:/^\./,lax:true})*/
 
 
 

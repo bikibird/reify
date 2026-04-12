@@ -44,10 +44,9 @@
        // predicate`work with`.mutually(true)
 
        // facts`player carries ring. player does not carry ring. some people carry treasure chest. some people do not carry treasure chest. player carried ring. player did not carry ring. [The player carrying the ring] endangers the plan. [the player not carrying the ring] endangers the plan. [the player having carried the ring] endangers the plan. [the player having not carried the ring] endangers the plan. Alice knows about [the player carrying the ring]. Alice knows about [the player not carrying the ring]. the carried ring endangers the plan. [[the player carrying the ring] endangering the plan] worries alice. [the player carrying [the ring endangering the plan]] worries alice.`
-    //facts`player carries ring.`
-  facts`ring is carried by player.`
-    
-
+    facts`player carries ring.`
+  //facts`ring is carried by player.`
+console.log(select`player carries (shiny or shiny) or shiny and shiny ring`)
     //facts`player carries ring.`
     //facts`player does not carry ring.`
     //facts`some people carry treasure chest.`
