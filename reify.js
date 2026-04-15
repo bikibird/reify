@@ -3054,20 +3054,17 @@ reify.dsl.statements=reify.Rule()
         return true
     }})
 reify.dsl.statements.period.configure({regex:/^\./,lax:true})
-reify.dsl.statements.statement=reify.Rule().snip("subject",reify.dsl.noun).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.noun).snip("prepositionalPhrases")
+reify.dsl.statements.statement=reify.Rule()
+    .snip("subject",reify.dsl.noun).snip("predicate")
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
         let gist =interpretation.gist
-        let directObject=gist.directObject
-        let verb=gist.verb.definition
+        let directObject=gist.predicate.directObject
+        let verb=gist.predicate.verb.definition
         let predicate=verb.predicate
-        let prepositionalPhrases=gist.prepositionalPhrases??[]
-        let prepositions=prepositionalPhrases.map(preposition=>preposition.definition.key)
         let argumentList=[]
-        //Check if prepositions match
-        if (prepositions.length !== predicate.prepositions.length) return false
-        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
-        if (predicate.converse)
+
+        if (verb.converse)
         {
             argumentList.push(reify.net[directObject.definition.key])
             argumentList.push(reify.net[gist.subject.definition.key])
@@ -3086,7 +3083,19 @@ reify.dsl.statements.statement=reify.Rule().snip("subject",reify.dsl.noun).snip(
         return true
 
     }})
-reify.dsl.statements.statement.prepositionalPhrases
+
+reify.dsl.statements.statement.predicate
+    .snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.noun).snip("prepositionalPhrases")
+    .configure({semantics:interpretation=>
+    {
+        let gist =interpretation.gist
+        let predicate=gist.verb.definition.predicate
+        let prepositions=(gist.prepositionalPhrases??[]).map(preposition=>preposition.definition.key)
+        if (prepositions.length !== predicate.prepositions.length) return false
+        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
+        return true
+    }})
+reify.dsl.statements.statement.predicate.prepositionalPhrases
     .configure({minimum:0,maximum:Infinity,greedy:true})
     .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.noun)
 reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/^[\s\,]+/ })
@@ -3206,18 +3215,14 @@ reify.dsl.adjectivePhrase.term.factor[2]
 reify.dsl.adjectivePhrase.term.factor[2].leftParen.configure({regex:/^\(/,lax:true})
 reify.dsl.adjectivePhrase.term.factor[2].rightParen.configure({regex:/^\)/,lax:true})
 
-
-
-
-
-
-
-
-
-
 reify.dsl.nounPhrase=reify.Rule()
    .snip("adjectivePhrase",reify.dsl.adjectivePhrase).snip("noun",reify.dsl.noun.clone()).snip("relativeClause") 
    .snip("noun",reify.dsl.noun.clone())
+   .configure({semantics:interpretation=>
+    {
+        return true
+        
+    }})
 reify.dsl.prepositionalPhrases=reify.Rule()
     .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.nounPhrase)
     .configure({minimum:0,maximum:Infinity,greedy:true})    
@@ -3228,45 +3233,66 @@ reify.dsl.nounPhrase.relativeClause
     .snip("relativizer").snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
     .configure({minimum:0})
 reify.dsl.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
-reify.dsl.selection=reify.Rule().snip("subject",reify.dsl.nounPhrase).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
-.configure({semantics:interpretation=> //Due to wildcards, each selection may involve multiple facts.  
-{
-    let gist =interpretation.gist
-    let directObject=gist.directObject.noun.definition.fuzzy?gist.directObject.noun.definition.match:gist.directObject.noun.definition.key
-    let subject=gist.subject.noun.definition.fuzzy?gist.subject.noun.definition.match:gist.subject.noun.definition.key
-    let verb=gist.verb.definition
-    let predicate=verb.predicate
-    let prepositionalPhrases=gist.prepositionalPhrases??[]
-    let prepositions=prepositionalPhrases.map(preposition=>preposition.definition.key)
-    let argumentList=[]
-    let placeholders={}
-    //Check if prepositions match
-    if (prepositions.length !== predicate.prepositions.length) return false
-    prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
-    if (predicate.converse)
+reify.dsl.selections=reify.Rule()
+    .snip("selection").snip("period")
+    .configure({maximum:Infinity, semantics:interpretation=>
     {
-        argumentList.push({noun:directObject})
-        argumentList.push({noun:subject})
-        if (subject.startsWith("_"))placeholders.subject=1
-        if (directObject.startsWith("_")) placeholders.directObject=0
-    }
-        
-    else
+        interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
+        return true
+    }})
+reify.dsl.selections.period.configure({regex:/^\./,lax:true})
+reify.dsl.selection=reify.Rule().snip("subject",reify.dsl.nounPhrase).snip("predicate")
+    .configure({semantics:interpretation=> //Due to wildcards, each selection may involve multiple facts.  
     {
-        argumentList.push({noun:subject})
-        argumentList.push({noun:directObject})
-        if (subject.startsWith("_"))placeholders.subject=0
-        if (directObject.startsWith("_")) placeholders.directObject=1
-    }
-    predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({noun:phrase.target.definition.key}))
+        let gist =interpretation.gist
+        let directObject=gist.predicate.directObject.noun.definition.fuzzy?gist.predicate.directObject.noun.definition.match:gist.predicate.directObject.noun.definition.key
+        let subject=gist.subject.noun.definition.fuzzy?gist.subject.noun.definition.match:gist.subject.noun.definition.key
+        let predicate=gist.predicate
+        let verb=predicate.verb.definition
+        let argumentList=[]
+        let placeholders={}
 
-    let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)+" "+argumentList[1].id
-    for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
-    id="["+id+"]"
-    interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
-    return true
+        if (verb.converse)
+        {
+            argumentList.push({noun:directObject})
+            argumentList.push({noun:subject})
+            if (subject.startsWith("_"))placeholders.subject=1
+            if (directObject.startsWith("_")) placeholders.directObject=0
+        }
+            
+        else
+        {
+            argumentList.push({noun:subject})
+            argumentList.push({noun:directObject})
+            if (subject.startsWith("_"))placeholders.subject=0
+            if (directObject.startsWith("_")) placeholders.directObject=1
+        }
+        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({noun:phrase.target.definition.key}))
 
-}})
+        let id=argumentList[0].id +" "+reify.lang.ing(verb.predicate.id)+" "+argumentList[1].id
+        for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
+        id="["+id+"]"
+        interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
+        return true
+
+    }})
+reify.dsl.selection.predicate
+    .snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases")
+    .configure({semantics:interpretation=>
+    {
+        let gist =interpretation.gist
+        let predicate=gist.verb.definition.predicate
+        let prepositions=(gist.prepositionalPhrases??[]).map(preposition=>preposition.definition.key)
+        if (prepositions.length !== predicate.prepositions.length) return false
+        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
+        return true
+    }})
+    reify.dsl.selection.predicate.prepositionalPhrases
+    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.nounPhrase)
+    .configure({minimum:0,maximum:Infinity,greedy:true})
+
+
+
 reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selection,separator:/^[\s\,]+/ })
 
 
