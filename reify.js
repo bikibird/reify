@@ -917,9 +917,9 @@ reify.Rule.prototype.snip =function(key,rule)
 	return this		
 }
 // #endregion
-// #region Phrase
+// #region Passage
 
-reify.Phrase =class Phrase
+reify.Passage =class Passage
 {
 	constructor(...precursor) 
 	{
@@ -928,7 +928,7 @@ reify.Phrase =class Phrase
 		Object.defineProperty(this,"ended",{value:false,writable:true})
 		Object.defineProperty(this,"_locked",{value:false,writable:true})
 		Object.defineProperty(this,"_erasable",{value:false,writable:true})
-		Object.defineProperty(this,"phrases",{value:[],writable:true})
+		Object.defineProperty(this,"passages",{value:[],writable:true})
 		Object.defineProperty(this,"re",{value:false,writable:true})
 		Object.defineProperty(this,"_property",{value:"",writable:true})
 		Object.defineProperty(this,"_results",{value:[],writable:true})
@@ -939,26 +939,26 @@ reify.Phrase =class Phrase
 		Object.defineProperty(this,"text",{value:"",writable:true})
 		this.fill(...precursor)
 		this.catalog()
-		return new Proxy(this, reify.Phrase.__handler)
+		return new Proxy(this, reify.Passage.__handler)
 	}
-	get also()  //Joins second phrase if first phrase generates non empty string
+	get also()  //Joins second passage if first passage generates non empty string
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class alsoPhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class alsoPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results=this.phrases[0].generate()
+				var results=this.passages[0].generate()
 				if (results.length>1 || (results.length===1 && results[0].value!==""))
 				{
-					this.results=results.concat(this.phrases[1].generate())
+					this.results=results.concat(this.passages[1].generate())
 					this.text=this.toString()
 				}
 				else
@@ -972,23 +972,23 @@ reify.Phrase =class Phrase
 	}
 	get when()
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class whenPhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class whenPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				this.phrases[1].generate()
-				if (this.phrases[1].text)
+				this.passages[1].generate()
+				if (this.passages[1].text)
 				{
-					this.phrases[0].generate()
-					this.text=this.phrases[0].text + this.phrases[1].text
+					this.passages[0].generate()
+					this.text=this.passages[0].text + this.passages[1].text
 					this.results=[{value:this.text}]
 				}
 				else
@@ -1001,16 +1001,16 @@ reify.Phrase =class Phrase
 			}
 		},reify.template.__handler)
 	}
-	get _() //joins two phrases without space
+	get _() //joins two passages without space
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spacePhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
@@ -1021,22 +1021,22 @@ reify.Phrase =class Phrase
 			}
 		},reify.template.__handler)
 	}
-	get spc()  //joins two phrases with space
+	get spc()  //joins two passages with space
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spcPhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spcPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results1=this.phrases[0].generate()
-				var results2=this.phrases[1].generate()
+				var results1=this.passages[0].generate()
+				var results2=this.passages[1].generate()
 				if (
 					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
 					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
@@ -1049,22 +1049,22 @@ reify.Phrase =class Phrase
 			}
 		},reify.template.__handler)
 	}
-	get spc1()  //joins 2 phrases with space  if first phrase generates non-empty string. 
+	get spc1()  //joins 2 passages with space  if first passage generates non-empty string. 
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spc1Phrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spc1Passage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results1=this.phrases[0].generate()
-				var results2=this.phrases[1].generate()
+				var results1=this.passages[0].generate()
+				var results2=this.passages[1].generate()
 				if (
 					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
 					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
@@ -1075,22 +1075,22 @@ reify.Phrase =class Phrase
 			}
 		},reify.template.__handler)
 	}
-	get spc2()  //joins 2 phrases with space  if and only if both phrases generate non-empty strings. 
+	get spc2()  //joins 2 passages with space  if and only if both passages generate non-empty strings. 
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spc2Phrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spc2Passage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results1=this.phrases[0].generate()
-				var results2=this.phrases[1].generate()
+				var results1=this.passages[0].generate()
+				var results2=this.passages[1].generate()
 				if (
 					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
 					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
@@ -1101,22 +1101,22 @@ reify.Phrase =class Phrase
 			}
 		},reify.template.__handler)
 	}
-	get comma()  //joins two phrases with , or space
+	get comma()  //joins two passages with , or space
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spacePhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results1=this.phrases[0].generate()
-				var results2=this.phrases[1].generate()
+				var results1=this.passages[0].generate()
+				var results2=this.passages[1].generate()
 				if (
 					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
 					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
@@ -1130,22 +1130,22 @@ reify.Phrase =class Phrase
 		},reify.template.__handler)
 	}
 
-	get comma2()  //joins two phrases with , or period
+	get comma2()  //joins two passages with , or period
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class spacePhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results1=this.phrases[0].generate()
-				var results2=this.phrases[1].generate()
+				var results1=this.passages[0].generate()
+				var results2=this.passages[1].generate()
 				if (
 					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
 					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
@@ -1180,16 +1180,16 @@ reify.Phrase =class Phrase
 		{
 			this.tags[this.id]=this  //Add this to its own tags
 		}
-		this.phrases.forEach(phrase=> 
+		this.passages.forEach(passage=> 
 		{
-			if (phrase instanceof reify.Phrase )
+			if (passage instanceof reify.Passage )
 			{
-				var tags= phrase._catalogUp()  // recursive catalog for sub phrases
+				var tags= passage._catalogUp()  // recursive catalog for sub passages
 				Object.keys(tags).forEach(key=>
 				{
 					if(!this.tags[key])
 					{
-						this.tags[key]=tags[key] //add sub phrases to this's tags
+						this.tags[key]=tags[key] //add sub passages to this's tags
 					} 
 				})
 			}
@@ -1198,17 +1198,17 @@ reify.Phrase =class Phrase
 	}
 	_catalogDown()
 	{
-		this.phrases.forEach(phrase=>
+		this.passages.forEach(passage=>
 		{
-			if (phrase instanceof reify.Phrase)
+			if (passage instanceof reify.Passage)
 			{
 				Object.keys(this.tags).forEach(key=>
 				{
-					if (!phrase.tags[key])
+					if (!passage.tags[key])
 					{
-						phrase.tags[key]=this.tags[key]  //add selfs tags to sub phrases
+						passage.tags[key]=this.tags[key]  //add selfs tags to sub passages
 					}	
-					phrase._catalogDown()  //recursively
+					passage._catalogDown()  //recursively
 				})
 			}	
 		})
@@ -1224,7 +1224,7 @@ reify.Phrase =class Phrase
 			if (condition){var rule = (a,b)=>b.map(item=>item[condition]).includes(a[condition])} 
 			else {var rule = (a,b)=>b.map(item=>item.value).includes(a.value)}
 		}
-		return new class concurPhrase extends reify.Phrase
+		return new class concurPassage extends reify.Passage
 		{
 			generate()
 			{
@@ -1238,7 +1238,7 @@ reify.Phrase =class Phrase
 
 	first(count=1)
 	{
-		return new class firstPhrase extends reify.Phrase
+		return new class firstPassage extends reify.Passage
 		{
 			generate()
 			{
@@ -1262,34 +1262,34 @@ reify.Phrase =class Phrase
 	{
 		var erasures=tags.flat()
 		if (erasures.length===0){erasures=Object.keys(this.tags)}
-		erasures.forEach(erasure=>{if (this.tags[erasure]._erasable){this.tags[erasure].phrases=[]}})
+		erasures.forEach(erasure=>{if (this.tags[erasure]._erasable){this.tags[erasure].passages=[]}})
 		return this
 	}
-	generate(phrases=this.phrases)
+	generate(passages=this.passages)
 	{
 		this.results=[]
-		phrases.forEach((phrase)=>
+		passages.forEach((passage)=>
 		{
-			if (phrase.generate) 
+			if (passage.generate) 
 			{
-				this.results=this.results.concat(phrase.generate())
+				this.results=this.results.concat(passage.generate())
 			}
 			else
 			{
-				if(Object.getPrototypeOf(phrase)===Object.prototype)
+				if(Object.getPrototypeOf(passage)===Object.prototype)
 				{
-					if(phrase.hasOwnProperty("value"))
+					if(passage.hasOwnProperty("value"))
 					{
-						if (phrase.value.generate){this.results=this.results.concat(phrase.value.generate())}
-						else{this.results=this.results.concat(phrase)}
+						if (passage.value.generate){this.results=this.results.concat(passage.value.generate())}
+						else{this.results=this.results.concat(passage)}
 					}
 					else
 					{
-						var values=Object.values(phrase)
+						var values=Object.values(passage)
 						if (values.length>0)
 						{
 							if (values[0].generate){this.results=this.results.concat(values[0].generate())}
-							else{this.results.push(Object.assign({value:values[0]},phrase))}
+							else{this.results.push(Object.assign({value:values[0]},passage))}
 						}
 						else 
 						{
@@ -1299,7 +1299,7 @@ reify.Phrase =class Phrase
 				}
 				else
 				{
-					this.results.push({value:phrase})
+					this.results.push({value:passage})
 				}
 			}
 		})
@@ -1314,9 +1314,9 @@ reify.Phrase =class Phrase
 	}
 	get inner()
 	{
-		if (this.phrases.length>0 && this.phrases[0] instanceof reify.Phrase)
+		if (this.passages.length>0 && this.passages[0] instanceof reify.Passage)
 		{
-			return this.phrases[0]
+			return this.passages[0]
 		}
 		else
 		{
@@ -1325,13 +1325,13 @@ reify.Phrase =class Phrase
 	}
 	join({separator=" ", trim=true}={})
 	{
-		return new class joinPhrase extends reify.Phrase
+		return new class joinPassage extends reify.Passage
 		{
 			generate()
 			{
 				super.generate()
 				var last=this.results.length-1
-				this.text=this.results.map(item=>item.value).reduce((result,phrase,index,)=>result+phrase+((index===last && trim)?"":separator),"")	
+				this.text=this.results.map(item=>item.value).reduce((result,passage,index,)=>result+passage+((index===last && trim)?"":separator),"")	
 				if (this.text){this.results=[{value:this.text}]}
 				return this.results
 			}
@@ -1339,7 +1339,7 @@ reify.Phrase =class Phrase
 	}
 	last(count=1)
 	{
-		return new class lastPhrase extends reify.Phrase
+		return new class lastPassage extends reify.Passage
 		{
 			generate()
 			{
@@ -1360,35 +1360,35 @@ reify.Phrase =class Phrase
 	}
 	get match()
 	{
-		var thisPhrase=this
-		return new Proxy((precursor) => new class matchPhrase extends reify.Phrase
+		var thisPassage=this
+		return new Proxy((precursor) => new class matchPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=thisPhrase  //hobbies
-				this.phrases[1]=precursor  //person
+				this.passages[0]=thisPassage  //hobbies
+				this.passages[1]=precursor  //person
 				this.catalog()
 			}
 			generate()
 			{
-				var a=this.phrases[0].generate()
-				var b= this.phrases[1].generate()
+				var a=this.passages[0].generate()
+				var b= this.passages[1].generate()
 				this.results=a.filter(a=>b.map(item=>item.value).includes(a.value))
 				this.text=this.toString()
 				return this.results
 			}
 		},reify.template.__handler)
 	}
-	//Unlike expand, modify takes a function to be applied to each of this phrases results.
+	//Unlike expand, modify takes a function to be applied to each of this passages results.
 	modify(modifier,...data)
 	{
 		if(data.length>0)
 		{
-			if(data.length===1 && data[0] instanceof reify.Phrase){var target=data[0]}
+			if(data.length===1 && data[0] instanceof reify.Passage){var target=data[0]}
 		}
 		else {var target=this}
-		return new class modifyPhrase extends reify.Phrase
+		return new class modifyPassage extends reify.Passage
 		{
 			constructor()
 			{
@@ -1400,8 +1400,8 @@ reify.Phrase =class Phrase
 				super.generate()
 				this.results=this.results.map(item=>
 				{
-					var modifiedPhrase=Object.assign({},item)
-					return Object.assign(modifiedPhrase,{value:modifier(item)})
+					var modifiedPassage=Object.assign({},item)
+					return Object.assign(modifiedPassage,{value:modifier(item)})
 				})	
 				this.text=this.toString()
 				return this.results
@@ -1410,17 +1410,17 @@ reify.Phrase =class Phrase
 	}
 	slot(rank)
 	{
-		return new class slotPhrase extends reify.Phrase
+		return new class slotPassage extends reify.Passage
 		{
-			constructor(primaryPhrase)
+			constructor(primaryPassage)
 			{
-				super(primaryPhrase,rank)
+				super(primaryPassage,rank)
 				this.catalog()
 			}
 			generate()
 			{
 				super.generate()
-				var rank=parseInt(this.phrases[1])
+				var rank=parseInt(this.passages[1])
 				this.results=[Object.assign({index:rank-1 ,rank:rank ,total:this.results[0].length},this.results[rank-1])]
 				this.text=this.toString()
 				return this.results
@@ -1431,11 +1431,11 @@ reify.Phrase =class Phrase
 	{
 		if(data.length>0)
 		{
-			if(data.length===1 && data[0] instanceof reify.Phrase){var target=data[0]}
+			if(data.length===1 && data[0] instanceof reify.Passage){var target=data[0]}
 		}
 		else {var target=this}
 	
-		return new class transformPhrase extends reify.Phrase
+		return new class transformPassage extends reify.Passage
 		{
 		constructor()
 			{
@@ -1455,37 +1455,37 @@ reify.Phrase =class Phrase
 	//_`${_.pick.animal()} `.per.ANIMAL("cat","dog","frog")
 	get per()
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class perPhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class perPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				if (precursor.length === 1 && precursor[0] instanceof reify.Phrase){this.phrases[1]=precursor[0]}
-				else(this.phrases[1]= new reify.Phrase(...precursor))
+				this.passages[0]=primaryPassage
+				if (precursor.length === 1 && precursor[0] instanceof reify.Passage){this.passages[1]=precursor[0]}
+				else(this.passages[1]= new reify.Passage(...precursor))
 				this.catalog()
 				
 			}
 			generate()
 			{
 				this.results=[]
-				for (let index = 0; index < this.phrases[1].generate().length; index++) {
-					this.results=this.results.concat(this.phrases[0].generate())
+				for (let index = 0; index < this.passages[1].generate().length; index++) {
+					this.results=this.results.concat(this.passages[0].generate())
 				}
 				this.text=this.toString()
 				return this.results	
 			}
 		},reify.template.__handler)
 	}
-	//fill figures out the core phrase to fill
-	//_fill formats data and assigns to phrases array.
+	//fill figures out the core passage to fill
+	//_fill formats data and assigns to passages array.
 	//DEFECT: Do we need to catalog after filling?
 	fill(...items)
 	{
-		if (items.length===1 && Object.getPrototypeOf(items[0])===Object.prototype)  //Might be POJO destined for tagged phrases.
+		if (items.length===1 && Object.getPrototypeOf(items[0])===Object.prototype)  //Might be POJO destined for tagged passages.
 		{
-			if (!items[0]._tagPhrase)
+			if (!items[0]._tagPassage)
 			{
 				this.erase()
 				Object.keys(items[0]).forEach(key=>
@@ -1493,7 +1493,7 @@ reify.Phrase =class Phrase
 					if (this.tags.hasOwnProperty(key))
 					{
 						this.tags[key].erasable=true
-						this.tags[key].fill({_tagPhrase:true,_data:items[0][key]}) 
+						this.tags[key].fill({_tagPassage:true,_data:items[0][key]}) 
 					}
 				})
 				//this.catalog()
@@ -1501,17 +1501,17 @@ reify.Phrase =class Phrase
 			}
 
 		}
-		if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)  //send items down to the core phrase
+		if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)  //send items down to the core passage
 		{
-			this.phrases[0].fill(...items)
+			this.passages[0].fill(...items)
 			//this.catalog()
 			return this	
 
 		}
-		//We're at the core so update phrase array with items.
+		//We're at the core so update passage array with items.
 
 		//this.erase()  //get rid of leftovers from last fill
-		if(!(items[0]===undefined) && (Object.getPrototypeOf(items[0])===Object.prototype && items[0]?._tagPhrase))
+		if(!(items[0]===undefined) && (Object.getPrototypeOf(items[0])===Object.prototype && items[0]?._tagPassage))
 		{
 			this._fill(items[0]._data)
 		}
@@ -1584,17 +1584,17 @@ reify.Phrase =class Phrase
 			}
 		}				
 
-		if (data.length===0){this.phrases=data}
+		if (data.length===0){this.passages=data}
 		else
 		{
-			this.phrases=data.map(phrase=> //normalize phrases
+			this.passages=data.map(passage=> //normalize passages
 			{
-				//if (phrase===undefined || phrase === null){return ""}
-				var phraseType=typeof phrase
-				if(phraseType==="string" ||Object.getPrototypeOf(phrase)===Object.prototype || phrase.generate || phraseType==="function" )
-				{return phrase}
+				//if (passage===undefined || passage === null){return ""}
+				var passageType=typeof passage
+				if(passageType==="string" ||Object.getPrototypeOf(passage)===Object.prototype || passage.generate || passageType==="function" )
+				{return passage}
 
-				return phrase.toString()
+				return passage.toString()
 
 			})
 		}	
@@ -1625,9 +1625,9 @@ reify.Phrase =class Phrase
 	}	
 	reset()
 	{ 
-		this.phrases.forEach(phrase=>
+		this.passages.forEach(passage=>
 		{
-			if(phrase instanceof reify.Phrase){phrase.reset()}	
+			if(passage instanceof reify.Passage){passage.reset()}	
 		})
 		return this
 	}
@@ -1647,11 +1647,11 @@ reify.Phrase =class Phrase
 			if(!seed){this._seed=reify.util.random().seed}
 			else{this._seed=seed}
 		}
-		this.phrases.forEach(phrase=>
+		this.passages.forEach(passage=>
 		{
-			if(phrase instanceof reify.Phrase)
+			if(passage instanceof reify.Passage)
 			{
-				phrase.seed(reify.util.random(this._seed).seed)
+				passage.seed(reify.util.random(this._seed).seed)
 			}	
 		})
 		return this
@@ -1669,28 +1669,28 @@ reify.Phrase =class Phrase
 	}
 	get then()
 	{
-		var primaryPhrase=this
-		return new Proxy((...precursor) => new class thenPhrase extends reify.Phrase
+		var primaryPassage=this
+		return new Proxy((...precursor) => new class thenPassage extends reify.Passage
 		{
 			constructor()
 			{
 				super()
-				this.phrases[0]=primaryPhrase
-				this.phrases[1]=new reify.Phrase(...precursor)
+				this.passages[0]=primaryPassage
+				this.passages[1]=new reify.Passage(...precursor)
 				this.catalog()
 			}
 			generate()
 			{
-				var results=this.phrases[0].generate()
+				var results=this.passages[0].generate()
 				if (results.length>1 || (results.length===1 && results[0].value!==""))
 				{
 					this.results=results
-					this.text=this.phrases[0].text
+					this.text=this.passages[0].text
 				}
 				else
 				{
-					this.results=this.phrases[1].generate()
-					this.text=this.phrases[1].text
+					this.results=this.passages[1].generate()
+					this.text=this.passages[1].text
 				}
 				return this.results
 			}
@@ -1698,25 +1698,25 @@ reify.Phrase =class Phrase
 	}
 	
 
-	//Unlike modify, expand takes a phrase factory and applies the results of this phrase to it.
-	expand(phraseFactory)
+	//Unlike modify, expand takes a passage factory and applies the results of this passage to it.
+	expand(passageFactory)
 	{
-		var thisPhrase=this
-		return new class expandPhrase extends reify.Phrase
+		var thisPassage=this
+		return new class expandPassage extends reify.Passage
 		{
 			generate()
 			{
-				this.results=thisPhrase.generate()
+				this.results=thisPassage.generate()
 				this.text=this.toString()
 				if (this.text)
 				{
 					if(this.results.length===1 && this.results[0].value instanceof Array)
 					{
-						this.results=phraseFactory(this.results[0].value).generate().map(item=>Object.assign({},item))	
+						this.results=passageFactory(this.results[0].value).generate().map(item=>Object.assign({},item))	
 					}
 					else
 					{
-						this.results=phraseFactory(this.results).generate().map(item=>Object.assign({},item))
+						this.results=passageFactory(this.results).generate().map(item=>Object.assign({},item))
 					}
 					this.text=this.toString()
 				}
@@ -1748,21 +1748,21 @@ reify.Phrase =class Phrase
 	}
 	
 }
-reify.Phrase.define=function(id)
+reify.Passage.define=function(id)
 {
-	var as= (phraseFactory)=>
+	var as= (passageFactory)=>
 	{
-		Object.defineProperty(reify.Phrase.prototype,id,
+		Object.defineProperty(reify.Passage.prototype,id,
 		{
 			get()
 			{
-				return phraseFactory(this)
+				return passageFactory(this)
 			}
 		})
 	}
 	return {as:as}	
 }
-reify.Phrase.__handler=
+reify.Passage.__handler=
 {
 	get: function(target, property, receiver) 
 	{
@@ -1774,11 +1774,11 @@ reify.Phrase.__handler=
 		{
 			if (property.toUpperCase()===property) 
 			{
-				return new reify.Phrase(target).tag(property.toLowerCase())
+				return new reify.Passage(target).tag(property.toLowerCase())
 			}
 			else
 			{
-				if(target.constructor.name==="siblingPhrase"){return reify.template.child(target,property)}
+				if(target.constructor.name==="siblingPassage"){return reify.template.child(target,property)}
 				else{return reify.template.sibling(target,property)}
 			}
 		}
@@ -1800,10 +1800,10 @@ reify.template.__handler=
 	 //_.a.cap.pick("cat","dog","frog")
 	 //t=>_.a.cap(t.noun.description.z)
 
-	//if template[asFunction] is undefined, property refers to a tagged phrase.
+	//if template[asFunction] is undefined, property refers to a tagged passage.
 	get:function(template, property,receiver)
 	{
-		//template is function that returns a phrase
+		//template is function that returns a passage
 		if (property==="asFunction")
 		{
 			return template	 
@@ -1822,77 +1822,77 @@ reify.template.__handler=
 		}
 		//_.a.b.c.TAG() becomes _.a(b(c())) c() is tagged
 	 	//_.a.TAG.b.c() becomes _.a(b(c())) b(c()) is tagged
-		if (property.toUpperCase()===property)  //property is request to create a tagged phrase
+		if (property.toUpperCase()===property)  //property is request to create a tagged passage
 		{
-			var finalPhraseFactory=(...precursor)=>template(new reify.Phrase(...precursor).tag(property.toLowerCase()))
-			var priorPhraseFactory=(...precursor)=> new reify.Phrase(...precursor).tag(property.toLowerCase())
+			var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.toLowerCase()))
+			var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.toLowerCase())
 			var handler=Object.assign(
 				{
 					wrapper:template,
-					prior:priorPhraseFactory,
+					prior:priorPassageFactory,
 					sibling:true //next property request for sibling
 				},
 				reify.template.__handler	
 			)
-			return new Proxy(finalPhraseFactory,handler)
+			return new Proxy(finalPassageFactory,handler)
 		}
-		if (this.sibling)  //property is request for sibling phrase
+		if (this.sibling)  //property is request for sibling passage
 		{
-			var finalPhraseFactory=()=>this.wrapper(reify.template.sibling(this.prior(),property))
-			var priorPhraseFactory=()=>reify.template.sibling(this.prior(),property)
+			var finalPassageFactory=()=>this.wrapper(reify.template.sibling(this.prior(),property))
+			var priorPassageFactory=()=>reify.template.sibling(this.prior(),property)
 			var handler=Object.assign(
 				{
 					wrapper:this.wrapper,
-					prior:priorPhraseFactory,
+					prior:priorPassageFactory,
 					child:true  //next property request is for child
 				},
 				reify.template.__handler	
 			)
-			return new Proxy(finalPhraseFactory,handler)			
+			return new Proxy(finalPassageFactory,handler)			
 
 		}
 		if (this.child)
 		{
-			var finalPhraseFactory=()=>this.wrapper(reify.template.child(this.prior(),property))
-			var priorPhraseFactory=()=>reify.template.child(this.prior(),property)
+			var finalPassageFactory=()=>this.wrapper(reify.template.child(this.prior(),property))
+			var priorPassageFactory=()=>reify.template.child(this.prior(),property)
 			var handler=Object.assign(
 				{
 					wrapper:this.wrapper,
-					prior:priorPhraseFactory,
+					prior:priorPassageFactory,
 					child:true  //all future property request are for children
 				},
 				reify.template.__handler	
 			)
-			return new Proxy(finalPhraseFactory,handler)	
+			return new Proxy(finalPassageFactory,handler)	
 		}
-		//property is neither request for child nor sibling; must be echo phrase
-		var finalPhraseFactory=()=>template(reify.template.echo(property))
-		var priorPhraseFactory=()=>reify.template.echo(property)
+		//property is neither request for child nor sibling; must be echo passage
+		var finalPassageFactory=()=>template(reify.template.echo(property))
+		var priorPassageFactory=()=>reify.template.echo(property)
 		var handler=Object.assign(
 			{
 				wrapper:template,
-				prior:priorPhraseFactory,
+				prior:priorPassageFactory,
 				sibling:true //next property request for sibling
 			},
 			reify.template.__handler	
 		)
-		return new Proxy(finalPhraseFactory,handler)
+		return new Proxy(finalPassageFactory,handler)
 	}
 }
 
 reify.template.defineClass=function(id)
 {
-	var as= (phraseClass)=>
+	var as= (passageClass)=>
 	{
-		reify.template[id]=new Proxy((...precursor)=>new phraseClass(...precursor),reify.template.__handler)
+		reify.template[id]=new Proxy((...precursor)=>new passageClass(...precursor),reify.template.__handler)
 	}
 	return {as:as}	
 }
 reify.template.define=function(id)
 {
-	var as= (phraseFactory)=>
+	var as= (passageFactory)=>
 	{
-		reify.template[id]=new Proxy(phraseFactory,reify.template.__handler)
+		reify.template[id]=new Proxy(passageFactory,reify.template.__handler)
 	}
 	return {as:as}	
 }
@@ -1900,15 +1900,15 @@ reify.template._=new Proxy
 (
 	function _(...data)
 	{
-		if (data.length===1 && data[0] instanceof reify.Phrase) return data[0]
-		else return new reify.Phrase(...data)
+		if (data.length===1 && data[0] instanceof reify.Passage) return data[0]
+		else return new reify.Passage(...data)
 	}
 	,reify.template.__handler
 )
 reify.template.define("cycle").as((...data)=>
 {
 	var counter=0
-	return new class cyclePhrase extends reify.Phrase
+	return new class cyclePassage extends reify.Passage
 	{
 		fill(literals, ...expressions)
 		{
@@ -1919,7 +1919,7 @@ reify.template.define("cycle").as((...data)=>
 		generate()
 		{
 			var results=[]	
-			if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)
+			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
 			{
 				results=super.generate()
 				var total=this.results.length
@@ -1927,8 +1927,8 @@ reify.template.define("cycle").as((...data)=>
 			}
 			else
 			{
-				var results=super.generate(this.phrases.slice(counter,counter+1))
-				var total=this.phrases.length
+				var results=super.generate(this.passages.slice(counter,counter+1))
+				var total=this.passages.length
 			}
 			if (this.results.length===0)
 			{
@@ -1954,34 +1954,34 @@ reify.template.define("cycle").as((...data)=>
 })
 reify.template.echo=function echo(tag)
 {
-	return new class echoPhrase extends reify.Phrase
+	return new class echoPassage extends reify.Passage
 	{
 		constructor()
 		{
 			super()
-			if (tag instanceof reify.Phrase){this.phrases[0]=tag}
+			if (tag instanceof reify.Passage){this.passages[0]=tag}
 			this.echo=true
 		}
 		generate()
 		{
-			if (this.phrases.length===0){this.phrases[0]=this.tags[tag]}
+			if (this.passages.length===0){this.passages[0]=this.tags[tag]}
 
-			if (this.echo){this.results=this.phrases[0].results}
-			else{this.results=this.phrases[0].generate()}
+			if (this.echo){this.results=this.passages[0].results}
+			else{this.results=this.passages[0].generate()}
 			this.text=this.toString()
-		//	this.tally=this.phrases[0].value.tally
+		//	this.tally=this.passages[0].value.tally
 			return this.results
 		}
 		get inner()
 		{
-			if (this.phrases.length===0){var innerPhrase= echo(this.tags[tag].inner)}
-			else {var innerPhrase= echo(this.phrases[0].inner)}
-			innerPhrase.echo=this.echo
-			return innerPhrase
+			if (this.passages.length===0){var innerPassage= echo(this.tags[tag].inner)}
+			else {var innerPassage= echo(this.passages[0].inner)}
+			innerPassage.echo=this.echo
+			return innerPassage
 		}
 		get results()
 		{
-			if (this.phrases.length===0){tag.results}
+			if (this.passages.length===0){tag.results}
 			else {return super.results}
 		}
 		set results(value){this._results=value}
@@ -1990,18 +1990,18 @@ reify.template.echo=function echo(tag)
 //_.blah.echo.data.data
 //_blah.data.data
 
-reify.template.sibling=function sibling(phrase, property)
+reify.template.sibling=function sibling(passage, property)
 {
-	return new class siblingPhrase extends reify.Phrase
+	return new class siblingPassage extends reify.Passage
 	{
 		constructor()
 		{
 			super()
-			this.phrases[0]=phrase
+			this.passages[0]=passage
 		}
 		generate()
 		{
-			this.results=this.phrases[0].generate()
+			this.results=this.passages[0].generate()
 			if (this.results.length===1 && this.results[0][property].generate)
 			{
 				this.results= this.results[0][property].generate()
@@ -2016,23 +2016,23 @@ reify.template.sibling=function sibling(phrase, property)
 				(result[property].data?{value:result[property].data()}:{value:result[property]})
 			))*/
 			this.text=this.toString()
-			//this.tally=this.phrases[0].value.tally
+			//this.tally=this.passages[0].value.tally
 			return this.results
 		}
 	}()		
 }
 reify.template.define("child").as(function child(parent,property)
 {
-	return new class childPhrase extends reify.Phrase
+	return new class childPassage extends reify.Passage
 	{
 		constructor()
 		{
 			super()
-			this.phrases[0]=parent
+			this.passages[0]=parent
 		}
 		generate()
 		{
-			this.results=this.phrases[0].generate()
+			this.results=this.passages[0].generate()
 			if (this.results.length===1 && this.result[0].value[property].generate)
 			{
 				this.results= this.results[0].value[property].generate()
@@ -2048,14 +2048,14 @@ reify.template.define("child").as(function child(parent,property)
 				(result.value[property].data?{value:result.value[property].data()}:{value:result.value[property]})
 			))*/
 			this.text=this.toString()
-			//this.tally=this.phrases[0].value.tally
+			//this.tally=this.passages[0].value.tally
 			return this.results
 		}
 	}()		
 })
 reify.template.define("ante").as(function ante(outer)
 {
-	return new class antePhrase extends reify.Phrase
+	return new class antePassage extends reify.Passage
 	{
 		constructor()
 		{
@@ -2074,10 +2074,10 @@ reify.template.define("ante").as(function ante(outer)
 		{
 			var counter=0
 			var target=this
-			while (target.constructor.name === "antePhrase")
+			while (target.constructor.name === "antePassage")
 			{
 				counter++
-				target=target.phrases[0] //.value
+				target=target.passages[0] //.value
 			}
 			for (let i = 0; i <counter; i++)
 			{
@@ -2088,11 +2088,11 @@ reify.template.define("ante").as(function ante(outer)
 	}()		
 })
 
-reify.template.defineClass("favor").as( class favorPhrase extends reify.Phrase
+reify.template.defineClass("favor").as( class favorPassage extends reify.Passage
 {
 	generate()
 	{
-		if(this.phrases.length===0)
+		if(this.passages.length===0)
 		{
 			this.text=""
 			this.results=[]
@@ -2104,7 +2104,7 @@ reify.template.defineClass("favor").as( class favorPhrase extends reify.Phrase
 			var {value:random,seed}=reify.util.random(this._seed)
 			this._seed=seed
 			
-			if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)
+			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
 			{
 				var results=super.generate()
 				var total=results.length
@@ -2114,17 +2114,17 @@ reify.template.defineClass("favor").as( class favorPhrase extends reify.Phrase
 			}
 			else
 			{
-				var total=this.phrases.length
+				var total=this.passages.length
 				var c=total*(total+1)*random
 				var counter=total-Math.floor((Math.sqrt(1+4*c)-1)/2)-1
-				var results=super.generate(this.phrases.slice(counter,counter+1))
+				var results=super.generate(this.passages.slice(counter,counter+1))
 			}
 
-			results.forEach(phrase=>
+			results.forEach(passage=>
 			{
-				phrase.index=counter
-				phrase.rank=counter+1
-				phrase.total=total
+				passage.index=counter
+				passage.rank=counter+1
+				passage.total=total
 			})
 			this.results=results
 			return this.results
@@ -2135,11 +2135,11 @@ reify.template.defineClass("favor").as( class favorPhrase extends reify.Phrase
 reify.template.define("pick").as((...data)=>
 {
 	var previous
-	return new class pickPhrase extends reify.Phrase
+	return new class pickPassage extends reify.Passage
 	{
 		generate()
 		{
-			if(this.phrases.length===0)
+			if(this.passages.length===0)
 			{
 				this.text=""
 				this.results=[]
@@ -2150,7 +2150,7 @@ reify.template.define("pick").as((...data)=>
 			{
 				var {value:random,seed}=reify.util.random(this._seed)
 				this._seed=seed
-				if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)
+				if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
 				{
 					var results=super.generate()
 					var total=results.length
@@ -2161,18 +2161,18 @@ reify.template.define("pick").as((...data)=>
 				}
 				else
 				{
-					var total=this.phrases.length
+					var total=this.passages.length
 					var counter=Math.floor(random*total)
 					if (counter===previous){counter =(counter+1)%total}
 					previous=counter
-					var results=super.generate(this.phrases.slice(counter,counter+1))
+					var results=super.generate(this.passages.slice(counter,counter+1))
 				}
 
-				results.forEach(phrase=>
+				results.forEach(passage=>
 				{
-					phrase.index=counter
-					phrase.rank=counter+1
-					phrase.total=total
+					passage.index=counter
+					passage.rank=counter+1
+					passage.total=total
 				})
 				this.results=results
 				return this.results
@@ -2180,15 +2180,15 @@ reify.template.define("pick").as((...data)=>
 		}
 	}(...data)
 })
-reify.template.define("re").as((phrase)=>
+reify.template.define("re").as((passage)=>
 {
-	phrase.re=true
-	return phrase
+	passage.re=true
+	return passage
 })
 
 reify.template.define("cull").as((...precursor)=>
 {
-	return new class cullPhrase extends reify.Phrase
+	return new class cullPassage extends reify.Passage
 	{
 		generate()
 		{
@@ -2204,7 +2204,7 @@ reify.template.define("cull").as((...precursor)=>
 })
 reify.template.define("refresh").as((...precursor)=>
 {
-	return new class refreshPhrase extends reify.Phrase
+	return new class refreshPassage extends reify.Passage
 	{
 		generate()
 		{
@@ -2214,11 +2214,11 @@ reify.template.define("refresh").as((...precursor)=>
 		}
 	}(...precursor)
 })
-reify.template.defineClass("roll").as( class rollPhrase extends reify.Phrase
+reify.template.defineClass("roll").as( class rollPassage extends reify.Passage
 {
 	generate()
 	{
-		if(this.phrases.length===0)
+		if(this.passages.length===0)
 		{
 			this.text=""
 			this.results=[]
@@ -2229,7 +2229,7 @@ reify.template.defineClass("roll").as( class rollPhrase extends reify.Phrase
 		{
 			var {value:random,seed}=reify.util.random(this._seed)
 			this._seed=seed
-			if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)
+			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
 			{
 				var results=super.generate()
 				var total=results.length
@@ -2238,16 +2238,16 @@ reify.template.defineClass("roll").as( class rollPhrase extends reify.Phrase
 			}
 			else
 			{
-				var total=this.phrases.length
+				var total=this.passages.length
 				var counter=Math.floor(random*total)
-				var results=super.generate(this.phrases.slice(counter,counter+1))
+				var results=super.generate(this.passages.slice(counter,counter+1))
 			}
 
-			results.forEach(phrase=>
+			results.forEach(passage=>
 			{
-				phrase.index=counter
-				phrase.rank=counter+1
-				phrase.total=total
+				passage.index=counter
+				passage.rank=counter+1
+				passage.total=total
 			})
 			this.results=results
 			return this.results
@@ -2257,7 +2257,7 @@ reify.template.defineClass("roll").as( class rollPhrase extends reify.Phrase
 reify.template.define("series").as((...data)=>
 {
 	var counter=0
-	return new class seriesPhrase extends reify.Phrase
+	return new class seriesPassage extends reify.Passage
 	{
 		fill(literals, ...expressions)
 		{
@@ -2269,7 +2269,7 @@ reify.template.define("series").as((...data)=>
 		generate()
 		{
 			var results=[]	
-			if (this.phrases.length===1 && this.phrases[0] instanceof reify.Phrase)
+			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
 			{
 				var results=super.generate()
 				var total=results.length
@@ -2277,8 +2277,8 @@ reify.template.define("series").as((...data)=>
 			}
 			else
 			{
-				var results=super.generate(this.phrases.slice(counter,counter+1))
-				var total=this.phrases.length
+				var results=super.generate(this.passages.slice(counter,counter+1))
+				var total=this.passages.length
 			}
 			if (this.ended || this.results.length===0 )
 			{
@@ -2313,7 +2313,7 @@ reify.template.define("series").as((...data)=>
 reify.template.define("shuffle").as((...data)=>
 {
 	var reshuffle =true
-	return new class shufflePhrase extends reify.Phrase
+	return new class shufflePassage extends reify.Passage
 	{
 		generate()
 		{
@@ -2347,7 +2347,7 @@ reify.template.define("shuffle").as((...data)=>
 reify.template.define("pin").as((...data)=>
 {
 	var pin =true
-	return new class pinPhrase extends reify.Phrase
+	return new class pinPassage extends reify.Passage
 	{
 		fill(literals, ...expressions)
 		{
@@ -2376,7 +2376,7 @@ reify.template.define("pin").as((...data)=>
 })
 reify.template.define("spc").as((...precursor)=>
 {
-	return new class spacePhrase extends reify.Phrase
+	return new class spacePassage extends reify.Passage
 	{
 		generate()
 		{
@@ -2579,7 +2579,6 @@ reify.adjective=function(literals, ...expressions)
 reify.facts=function(literals, ...expressions)
     { 
         let {success,interpretations}=reify.statementParser.analyze(reify.toString(literals, ...expressions))
-        console.log(interpretations)
         if (success)
         {
             if (interpretations.length==0)
@@ -2636,6 +2635,7 @@ reify.proxies.noun=
 		if(methods.hasOwnProperty(property)) return methods[property]
 		if (property==="id") return target[property]
         if (property==="_indexes") return target[property]
+        if (property==="scenes") return target[property]
 
 		return function(value)
 		{
@@ -2707,12 +2707,16 @@ reify.classes.noun=class Noun
 	{
 		constructor(literals, ...expressions) // maybe template literal notation or function notation
 		{
-            
-			Object.defineProperty(this, "id",{value:reify.formatId(reify.toString(literals, ...expressions)),enumerable:false})
-			Object.defineProperty(this, "description",{value:reify.template._,enumerable:false,writable:true})
-			Object.defineProperty(this, "name",{value:reify.formatName(this.id),enumerable:false,writable:true})
-            Object.defineProperty(this, "attributive",{value:false,enumerable:false,writable:true})
-            Object.defineProperty(this, "_indexes",{value:[],enumerable:false,writable:true})
+            let name=reify.toString(literals, ...expressions)
+            Object.defineProperties(this,
+                {
+                    id:{value:reify.formatId(name),enumerable:false},
+                    description:{value:reify.template._,enumerable:false,writable:true},
+                    name:{value:reify.formatName(name),enumerable:false,writable:true},
+                    attributive:{value:false,enumerable:false,writable:true},
+                    _indexes:{value:[],enumerable:false,writable:false},
+                    scenes:{value:new Set(),enumerable:false,writable:false}
+                })
 			let noun=new Proxy(this,reify.proxies.noun)
 			reify.net[this.id]=noun
 			reify.glossary.register(this.name).as({part: "noun",  key:this.id})
@@ -2755,14 +2759,17 @@ reify.classes.Predicate=class Predicate
 	{
 		let name=reify.toString(literals, ...expressions)
 		let p_strings=name.split(" ")
-		Object.defineProperty(this, "id",{value:name,enumerable:false})
-		Object.defineProperty(this, "verb",{value:reify.formatName(p_strings[0]),enumerable:false,writable:false})
-		Object.defineProperty(this, "prepositions",{value:p_strings.splice(1)??[],enumerable:false,writable:false})
-		Object.defineProperty(this, "mutual",{value:false,enumerable:false})
-		Object.defineProperty(this, "exclusive",{value:false,enumerable:false})
-		Object.defineProperty(this, "_index",{value:new reify.Reality(),enumerable:false,writable:true})
-        Object.defineProperty(this, "copular",{value:false,enumerable:false})
-
+		Object.defineProperties(this,
+        { 
+            id:{value:reify.formatId(name),enumerable:false},
+            verb:{value:reify.formatName(p_strings[0]),enumerable:false,writable:false},
+            prepositions:{value:p_strings.splice(1)??[],enumerable:false,writable:false},
+            mutual:{value:false,enumerable:false},
+            exclusive:{value:false,enumerable:false},
+            _index:{value:new reify.Reality(),enumerable:false,writable:false},
+            copular:{value:false,enumerable:false},
+            scenes:{value:new Set(),enumerable:false,writable:false}
+        })
 		this.#conjugate(this.verb,false)
 		this.prepositions.forEach(preposition=>
 		{
@@ -2855,21 +2862,67 @@ reify.classes.Predicate=class Predicate
 		return reality
 	}
 }
-/*reify.proxies.predicate=  //To Do: Remove not used
-{	
-	//use setter/getter for properties
-	//predicate.property() returns value of property predicate.property(value) sets property with value
-	get: function(target, property, receiver) //receiver is proxy.
-	{
-		if (typeof target[property] === "function" || property==="id") return target[property]
-		return function(value)
-		{
-			if (value===undefined){return target[property]}
-			target[property]=value
-			return receiver
-		}
-	}	
-}*/
+reify.classes.Scene=class Scene
+{
+    constructor(literals, ...expressions)
+    {
+        
+        
+        var source=reify.toString(literals, ...expressions)
+        
+        let {success,interpretations}=reify.selectionParser.analyze(source)
+        if (success)
+        {
+            
+            if (interpretations.length==0)
+            {
+                throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
+            } 
+            else if (interpretations.length>1) 
+            {
+                throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
+            }
+            else  //add scene to nouns
+            {
+                let gist=interpretations[0].gist
+                Object.defineProperties(this,
+                {   
+                    selector:{value:gist.selector,enumerable:false,writable:false},
+                    storylines:{value:[],enumerable:false,writable:true}, //because underscores are lines that denote a passage
+                    plot:{value:(reality)=>true,enumerable:false,writable:true}                    
+                })
+                
+                
+                gist.nouns.forEach(noun=>noun.scenes.add((this)))
+                gist.predicates.forEach(predicate=>predicate.scenes.add((this)))
+
+                
+                return this
+            }
+            
+        }
+        else
+        {
+            console.log(interpretations)
+            throw new Error("ERROR 0005: Unable to parse reify source code.")
+
+        }
+
+    }
+    narrate(storyline)
+    {
+        return this
+    }
+    action(plot)
+    {
+        this.plot=()=>plot(this.selector())
+        return this
+    }
+    _(literals,...expressions)
+    {
+        return this
+    }
+}
 
 //reify.predicate=new Proxy(reify.classes.Predicate,reify.proxies.newless)
 reify.predicate=function(literals, ...expressions)
@@ -2885,7 +2938,7 @@ reify.Reality=class Reality
     
     constructor(...facts)  //Realities can be made from facts or other realities
     {
-        Object.defineProperty(this, "placeholder",{value:{},enumerable:false,writable:true})
+        Object.defineProperty(this, "wildcards",{value:{},enumerable:false,writable:true})
         Object.defineProperty(this, "set",{value:new Set(),enumerable:false,writable:true})
         facts.forEach(fact=>
         {
@@ -2921,8 +2974,12 @@ reify.Reality=class Reality
     get size(){return this.set.size}
     subtract(...items)
     {
-        if (item instanceof reify.classes.fact)  this.set.delete(item)
-        else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
+        items.forEach(item=>
+        {
+            if (item instanceof reify.classes.fact)  this.set.delete(item)
+            else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
+        })
+        
         return this
     }
     forEach(task)
@@ -2937,6 +2994,13 @@ reify.Reality=class Reality
         // To Do: process resulting reality through plot.
         //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
         //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
+
+        /*
+            get reality of facts
+            gather scenes from nouns and predicates
+            sort scenes into an array named plot by specificity.
+            call plot[0].unfold(plot[].slice(1),this)
+        */
         let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
         this.set.forEach(fact=>
         {
@@ -2959,6 +3023,7 @@ reify.Reality=class Reality
         return this
     }
 }
+
 // #endregion
 
 // #region dsl
@@ -3151,7 +3216,7 @@ reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl
 ////selection grammar
 reify.dsl.adjective=reify.Rule().configure({filter:(definition)=>definition?.part==="adjective",semantics:interpretation=>
 {
-    interpretation.gist= interpretation.gist.definition.value
+    interpretation.gist= {filter:interpretation.gist.definition.value,specificity:[0,1]}
     return true
 }})
 
@@ -3162,9 +3227,9 @@ reify.dsl.adjectivePhrase=reify.Rule()
         let gist=interpretation.gist
         let term=gist.term
         let operations=gist.termOperations??[]
-        operations.forEach(operation=>term=noun=>term || operation.term(noun))
-        interpretation.gist=term
-       console.log(term.toString())
+        let specificity=term.specificity[1] + operations.reduce((a,b)=>a+b.term.specificity[1],0)
+        let filter=noun=>operations.reduce((a,b)=>a || b.filter(noun),term.filter(noun))
+        interpretation.gist={filter:filter,specificity:[0,specificity]}
         return true
     }})
 reify.dsl.adjectivePhrase.term
@@ -3172,10 +3237,12 @@ reify.dsl.adjectivePhrase.term
     .configure({semantics:interpretation=>
     {
         let gist=interpretation.gist
-        let term=gist.factor
+        let factor=gist.factor
         let operations=gist.factorOperations??[]
-        operations.forEach(operation=>term=noun=>term && operation.factor(noun))
-        interpretation.gist=term
+        let specificity=factor.specificity[1] + operations.reduce((a,b)=>a+b.factor.specificity[1],0)
+        let filter=noun=>operations.reduce((a,b)=>a && b.filter(noun),factor.filter(noun))
+        interpretation.gist={filter:filter,specificity:[0,specificity]}
+        
         return true
     }})
 reify.dsl.adjectivePhrase.termOperations.snip("orOperator").snip("term",reify.dsl.adjectivePhrase.term)
@@ -3188,17 +3255,13 @@ reify.dsl.adjectivePhrase.term.factor
     .snip(0,reify.dsl.adjective)
     .snip(1) //not factor
     .snip(2) // grouping (adjective phrase)
-    .configure({mode:reify.Rule.apt,semantics:interpretation=>
-    {
-        console.log(interpretation.gist.toString())
-        return true
-    }})
+    .configure({mode:reify.Rule.apt})
 
 reify.dsl.adjectivePhrase.term.factor[1]
     .snip("notOperator").snip("factor",reify.dsl.adjectivePhrase.term.factor)
     .configure({semantics:(interpretation)=>
     {
-        interpretation.gist=(noun)=>!interpretation.gist.factor()
+        interpretation.gist={filter:(noun)=>!interpretation.gist.factor.filter(noun),specificity:[0,interpretation.gist.factor.specificity]}
         return true
     }})
 reify.dsl.adjectivePhrase.term.factor[1].notOperator
@@ -3220,6 +3283,7 @@ reify.dsl.nounPhrase=reify.Rule()
    .snip("noun",reify.dsl.noun.clone())
    .configure({semantics:interpretation=>
     {
+        
         return true
         
     }})
@@ -3233,46 +3297,64 @@ reify.dsl.nounPhrase.relativeClause
     .snip("relativizer").snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.nounPhrase).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
     .configure({minimum:0})
 reify.dsl.nounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
-reify.dsl.selections=reify.Rule()
-    .snip("selection").snip("period")
-    .configure({maximum:Infinity, semantics:interpretation=>
-    {
-        interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
-        return true
-    }})
-reify.dsl.selections.period.configure({regex:/^\./,lax:true})
 reify.dsl.selection=reify.Rule().snip("subject",reify.dsl.nounPhrase).snip("predicate")
     .configure({semantics:interpretation=> //Due to wildcards, each selection may involve multiple facts.  
     {
         let gist =interpretation.gist
-        let directObject=gist.predicate.directObject.noun.definition.fuzzy?gist.predicate.directObject.noun.definition.match:gist.predicate.directObject.noun.definition.key
-        let subject=gist.subject.noun.definition.fuzzy?gist.subject.noun.definition.match:gist.subject.noun.definition.key
+        let directObject=gist.predicate.directObject
+        let directObjectNoun=directObject.noun.definition.fuzzy?noun.definition.match:directObject.noun.definition.key
+        let subject=gist.subject
+        let subjectNoun=subject.noun.definition.fuzzy?subject.noun.definition.match:subject.noun.definition.key
         let predicate=gist.predicate
         let verb=predicate.verb.definition
         let argumentList=[]
-        let placeholders={}
+        let wildcards={}
+        let specificity=[0,0]
+        let nouns={}
 
         if (verb.converse)
         {
-            argumentList.push({noun:directObject})
-            argumentList.push({noun:subject})
-            if (subject.startsWith("_"))placeholders.subject=1
-            if (directObject.startsWith("_")) placeholders.directObject=0
-        }
+            argumentList.push({noun:directObjectNoun,adjectivePhrase:directObject.adjectivePhrase}) //filter will eventually include restrictive phrases function
+            argumentList.push({noun:subjectNoun,adjectivePhrase:subject.adjectivePhrase})
+            if (subjectNoun.startsWith("_")){wildcards.subjectNoun=1} 
+            if (directObjectNoun.startsWith("_")){wildcards.directObjectNoun=0} 
             
+        }
         else
         {
-            argumentList.push({noun:subject})
-            argumentList.push({noun:directObject})
-            if (subject.startsWith("_"))placeholders.subject=0
-            if (directObject.startsWith("_")) placeholders.directObject=1
+            argumentList.push({noun:subjectNoun,adjectivePhrase:subject.adjectivePhrase})
+            argumentList.push({noun:directObjectNoun,adjectivePhrase:directObject.adjectivePhrase})
+            if (subjectNoun.startsWith("_")){wildcards.subject=0}
+            if (directObjectNoun.startsWith("_")){wildcards.directObject=1}
         }
-        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({noun:phrase.target.definition.key}))
 
-        let id=argumentList[0].id +" "+reify.lang.ing(verb.predicate.id)+" "+argumentList[1].id
-        for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
-        id="["+id+"]"
-        interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
+        if (!subjectNoun.startsWith("_"))
+        {
+            specificity[0]+=1
+            nouns[subjectNoun]=reify.net[subjectNoun]
+        }
+        if (!directObjectNoun.startsWith("_"))
+        {
+            specificity[0]+=1
+            nouns[directObjectNoun]=reify.net[directObjectNoun]
+        }
+        specificity[1]+=subject.adjectivePhrase?.specificity[1]??0
+        specificity[1]+=directObject.adjectivePhrase?.specificity[1]??0
+        
+        predicate.prepositionalPhrases?.forEach((phrase,index)=>
+        {
+            let target=phrase.target.definition.key
+            argumentList.push({noun:target})
+            if (target.startsWith("_")){wildcards[target.slice(1,-1)]=index+2}
+            else
+            {
+                specificity[0]+=1
+                nouns[target]=reify.net[target]
+            }
+
+            specificity[1]+=target.adjectivePhrase?.specificity[1]??0
+        })
+        interpretation.gist={predicate:verb.predicate,tense:verb.tense,polarity:verb.polarity,arguments:argumentList,wildcards:wildcards,specificity:specificity,nouns:nouns}
         return true
 
     }})
@@ -3291,9 +3373,86 @@ reify.dsl.selection.predicate
     .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.nounPhrase)
     .configure({minimum:0,maximum:Infinity,greedy:true})
 
+reify.dsl.selections=reify.Rule()
+    .snip("selection",reify.dsl.selection).snip("period")
+    .configure({maximum:Infinity, semantics:interpretation=>
+    {
+        //interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.selection),[])
+        let selections=interpretation.gist.map(a=>a.selection)
+        let selector=(wildcards,placeholders)=>
+        {
+            const reality=new reify.Reality()
+            
+            //resolve wildcards and placeholders: _thing_, #thing
+            /*      wildcards.npc={index:0,noun:true}
+                    wildcards.thing={index:1,noun:true}
+                    wildcards.action={predicate:true}
+            */
 
+            
+            selections.forEach(selection=>
+            {
+                const r=new reify.Reality
 
-reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selection,separator:/^[\s\,]+/ })
+                selection.arguments.forEach((argument,index)=>
+                {
+                    const noun=argument.noun
+                    if (noun.startsWith("_"))
+                    {
+
+                        Object.assign(r.wildcards,{[noun.slice(1,-1 )]:{index:index,noun:true}})
+                    }
+                    else if (noun.startsWith("#")) 
+                    {
+                        
+                        if (r.isEmpty) r.add(reify.net[placeholders[noun.slice(1)]]._indexes[index])
+                        else r.filter(reify.net[placeholders[noun.slice(1)]]._indexes[index])
+
+                    }
+                    else
+                    {
+
+                        //get facts associated with noun._index[index] if reality is empty, add otherwise filter
+                        if (r.isEmpty) r.add(reify.net[noun]._indexes[index])
+                        else r.filter(reify.net[noun]._indexes[index])
+
+                    }
+                })
+                // apply predicate to reality
+                if (selection.predicate instanceof reify.classes.Predicate) selection.predicate._index
+                else if (selection.predicate) wildcards[selection.predicate.slice(1,-1 )]={predicate:true} 
+                // apply adjectives
+                r.forEach(fact=>
+                {
+                    selection.arguments.forEach((argument)=>  
+                    {
+                        if (argument.filter && argument.filter(reify.net[argument.noun])) r.subtract(fact)
+                    })
+
+                })
+                reality.add(r)
+            })
+
+            //DEFECT what do we do about negative polarity and tense?
+            return reality
+                
+        } 
+        let specificity=selections.reduce((a,b)=>
+        {
+            a[0]+=b.specificity[0]
+            a[1]+=b.specificity[1]
+            return a
+        },[0,0])
+        specificity=specificity.map(s=>s/selections.length) //DEFECt Averaging specificity isn't great.  
+        interpretation.gist={selector:selector,specificity:specificity,
+             nouns:selections.reduce((a,b)=>{Object.values(b.nouns).forEach(noun=>a.add(noun)); return a},new Set()),
+             predicates:selections.reduce((a,b)=>a.add(b.predicate), new Set())}         
+           // nouns:selections.reduce((a,b)=>Object.assign(a,b.nouns),{}),predicates:selections.map((selection)=>selection.predicate)}         
+        return true
+    }})
+reify.dsl.selections.period.configure({regex:/^\./,lax:true})
+
+reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selections,separator:/^[\s\,]+/ })
 
 
 /*  condition grammar
@@ -3328,82 +3487,6 @@ reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
 reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
 
 
-/*reify.dsl.selectionNounClause=reify.Rule()
-reify.dsl.selectionPredicate=reify.Rule().snip("verb").snip("directObject",reify.dsl.selectionNounClause).snip("prepositionalPhrases")
-reify.dsl.selectionNounPhrase=reify.Rule().snip("adjectives").snip("attributive").snip("noun").snip("relativeClause") 
-    .configure({semantics:interpretation=>
-    {
-        const definition=interpretation.gist.noun.definition
-        const key=definition.key??definition.match
-        const adjectives=interpretation.gist.adjectives?.map(adjective=>adjective.definition) ?? []
-        interpretation.gist={adjectives:adjectives, noun:key}
-
-        return true
-    }})
-reify.dsl.selectionNounPhrase.adjectives.configure({minimum:0,maximum:Infinity,filter:(definition)=>definition?.part==="adjective"})
-reify.dsl.selectionNounPhrase.attributive.configure({minimum:0,filter:(definition)=>definition?.part==="attributive"})
-reify.dsl.selectionNounPhrase.noun=reify.Rule().configure({mode:reify.Rule.apt})
-	.snip(0)
-	.snip(1)
-	.snip(2)
-reify.dsl.selectionNounPhrase.noun[0]
-    .configure({filter:(definition)=>definition?.part==="noun"})	
-reify.dsl.selectionNounPhrase.noun[1].configure({regex:/^#[a-zA-Z][\w ]*#/})
-reify.dsl.selectionNounPhrase.noun[2].configure({regex:/^\_[a-zA-Z][\w ]*\_/})
-reify.dsl.selectionNounPhrase.relativeClause
-    .snip("relativizer").snip("predicate",reify.dsl.selectionPredicate)
-    .configure({minimum:0})
-reify.dsl.selectionNounPhrase.relativeClause.relativizer.configure({filter:(definition)=>definition?.part==="relativizer"})
-
-reify.dsl.selectionNounClause.configure({mode:reify.Rule.apt})
-    .snip(0) //fact
-    .snip(1,reify.dsl.selectionNounPhrase)
-reify.dsl.selectionNounClause[0] //fact
-    .snip("leftBracket").snip("subject",reify.dsl.selectionNounClause).snip("gerund").snip("directObject",reify.dsl.selectionNounClause).snip("prepositionalPhrases",reify.dsl.selectionPredicate.prepositionalPhrases).snip("rightBracket")
-    .configure({minimum:0})
-reify.dsl.selectionNounClause[0].gerund.configure({filter:(definition)=>definition?.part==="gerund"})
-reify.dsl.selectionNounClause[0].leftBracket.configure({regex:/^\[/,lax:true})
-reify.dsl.selectionNounClause[0].rightBracket.configure({regex:/^\]/,lax:true})
-
-
-reify.dsl.selectionPredicate.verb.configure({filter:(definition)=>definition?.part==="verb"})
-reify.dsl.selectionPredicate.prepositionalPhrases.snip("preposition").snip("target",reify.dsl.selectionNounClause)
-    .configure({minimum:0,maximum:Infinity,greedy:true})
-reify.dsl.selectionPredicate.prepositionalPhrases.preposition.configure({filter:(definition)=>definition?.part==="preposition"})
-
-reify.dsl.selections=reify.Rule()
-    .snip("selection").snip("period")
-    .configure({maximum:Infinity, semantics:interpretation=>
-    {
-        interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.statement),[])
-        return true
-    }})
-reify.dsl.selections.selection
-    .snip("subject",reify.dsl.selectionNounClause).snip("predicate",reify.dsl.selectionPredicate)
-    .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
-    {
-        let verb=interpretation.gist.predicate.verb.definition
-        let argumentList=[]
-
-        argumentList.push({key:"subject", value:interpretation.gist.subject},{key:verb.predicate.verb,value:interpretation.gist.predicate.directObject})
-        interpretation.gist.predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push({key:phrase.preposition.definition.key,value:phrase.target}))
-
-        interpretation.gist={predicate:verb.predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,arguments:argumentList}
-        return true
-
-    }})
-reify.dsl.selections.period.configure({regex:/^\./,lax:true})*/
-
-
-
-
-
-
-
-
-
-
-
 reify.select=function(literals, ...expressions)
 {
 	var source=reify.toString(literals, ...expressions)
@@ -3422,126 +3505,66 @@ reify.select=function(literals, ...expressions)
 		}
 		else
 		{
-            const reality=new reify.Reality()
-            const placeholder={}
-            const statement=interpretations[0].gist[0]
-
-            statement.voice===reify.lang.active
-            statement.arguments.forEach((argument,index)=>
-            {
-                const noun=argument.value.noun
-                if (noun.startsWith("_")) Object.assign(reality.placeholder,{[noun.slice(1,-1 )]:{index:index,noun:true}})
-                else
-                {
-                    //get facts associated with noun._index[index] if reality is empty, add otherwise filter
-                    if (reality.isEmpty) reality.add(reify.net[noun]._indexes[index])
-                    else reality.filter(reify.net[noun]._indexes[index])
-                }
-            })
-
-            // apply predicate to reality
-            if (predicate instanceof reify.classes.Predicate) predicate.select(reality)
-            else if (predicate) placeholder[predicate.slice(1,-1 )]={predicate:true}
-
-            // apply adjectives
-            reality.forEach(fact=>
-            {
-                statement.arguments.forEach((argument,index)=>argument.value.adjectives.forEach(adjective=>
-                {
-                    if (adjective.value(fact.nouns[index])===false) reality.subtract(fact)
-                }))
-
-            })
-            return reality
+           
+            return interpretations[0].gist.selector()
 		}
+        
 	}
 	else
 	{
 		console.log(interpretations)
+
 		throw new Error("ERROR 0005: Unable to parse reify source code.")
 
 	}
 
 }
 
-//obsolete-- reify.dslParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements})
-
-
-reify.select=function(literals, ...expressions)
+reify.now=function(literals, ...expressions)
 {
-	var source=reify.toString(literals, ...expressions)
-	
-	let {success,interpretations}=reify.selectionParser.analyze(source)
-	if (success)
-	{
-		
-		if (interpretations.length==0)
-		{
-			throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
-		} 
-		else if (interpretations.length>1) 
-		{
-			throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
-		}
-		else
-		{
-            const reality=new reify.Reality()
-            const placeholder={}
-            const statement=interpretations[0].gist[0]
-            const predicate=statement.predicate
-            /* Can we get away with no passive voice in DSL?
-            No, passive voice used for abuttal: `foyer is north of cloakroom.` Has a passive form `cloakroom is south of foyer.` 
-
-            statements maybe in active or passive voice, but facts are always in active voice.
-     
-            */
-            if (statement.voice===reify.lang.passive)[statement.nouns[0], statement.nouns[1]] = [statement.nouns[1],statement.nouns[0]]
-            statement.voice===reify.lang.active
-            statement.arguments.forEach((argument,index)=>
+	let {success,interpretations}=reify.statementParser.analyze(reify.toString(literals, ...expressions))
+        if (success)
+        {
+            if (interpretations.length==0)
             {
-                const noun=argument.value.noun
-                if (noun.startsWith("_")) Object.assign(reality.placeholder,{[noun.slice(1,-1 )]:{index:index,noun:true}})
-                else
-                {
-                    //get facts associated with noun._index[index] if reality is empty, add otherwise filter
-                    if (reality.isEmpty) reality.add(reify.net[noun]._indexes[index])
-                    else reality.filter(reify.net[noun]._indexes[index])
-                }
-            })
-
-            // apply predicate to reality
-            if (predicate instanceof reify.classes.Predicate) predicate.select(reality)
-            else if (predicate) placeholder[predicate.slice(1,-1 )]={predicate:true}
-
-            // apply adjectives
-            reality.forEach(fact=>
+                throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
+            } 
+            else if (interpretations.length>1) 
             {
-                statement.arguments.forEach((argument,index)=>argument.value.adjectives.forEach(adjective=>
+                throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
+            }
+            else
+            { 
+                let reality=reify.Reality()
+                interpretations[0].gist.forEach(statement=> reality.add(new reify.classes.fact(statement)))
+                reality.forEach(fact=>
                 {
-                    if (adjective.value(fact.nouns[index])===false) reality.subtract(fact)
-                }))
+                    
 
-            })
-            return reality
-		}
-	}
-	else
-	{
-		console.log(interpretations)
-		throw new Error("ERROR 0005: Unable to parse reify source code.")
-
-	}
+                })
+            }
+        }
+        else
+        {
+            console.log(interpretations)
+            throw new Error("ERROR 0005: Unable to parse reify source code.")
+        }
+        return this
 
 }
 
-// #region plot
 
-reify.plot={}
 
-reify.storyline=function()  //triggers upon fact creations
+// #region scene
+
+
+
+reify.scene=function(literals, ...expressions)
 {
-
+   return new reify.classes.Scene(literals, ...expressions)
 }
+
+
 
 
 

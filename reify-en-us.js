@@ -704,19 +704,19 @@ reify.lang.est.superlatives={bad:"worst",far:"farthest",good:"best"}
 
 
 
-// #region Templates Prefixes and phrase suffixes/infixes
+// #region Templates Prefixes and passage suffixes/infixes
 
-reify.template.define("a").as((...data)=> reify.Phrase.prototype.modify(item=>`${reify.lang.a(item.value)} ${item.value}`,...data))
-reify.template.define("A").as((...data)=>reify.Phrase.prototype.modify(item=>`${reify.lang.capitalize(reify.lang.a(item.value))} ${item.value}`,...data))
+reify.template.define("a").as((...data)=> reify.Passage.prototype.modify(item=>`${reify.lang.a(item.value)} ${item.value}`,...data))
+reify.template.define("A").as((...data)=>reify.Passage.prototype.modify(item=>`${reify.lang.capitalize(reify.lang.a(item.value))} ${item.value}`,...data))
 reify.template.an=reify.template.a
 reify.template.An=reify.template.a
 
-reify.template.define("cap").as((...data)=> reify.Phrase.prototype.modify(item=>reify.lang.capitalize(item.value),...data))
+reify.template.define("cap").as((...data)=> reify.Passage.prototype.modify(item=>reify.lang.capitalize(item.value),...data))
 
-/*** Phrases suffixes***/
-reify.Phrase.define("ed").as( precursor => precursor.modify(item=>reify.lang.ed(item.value)))
-reify.Phrase.define("en").as( precursor => precursor.modify(item=>reify.lang.en(item.value)))
-reify.Phrase.define("er").as (precursor => 
+/*** Passages suffixes***/
+reify.Passage.define("ed").as( precursor => precursor.modify(item=>reify.lang.ed(item.value)))
+reify.Passage.define("en").as( precursor => precursor.modify(item=>reify.lang.en(item.value)))
+reify.Passage.define("er").as (precursor => 
 {
 	return precursor.modify(item=>
 	{
@@ -729,8 +729,8 @@ reify.Phrase.define("er").as (precursor =>
 		else {return reify.lang.er(item.value)}
 	})
 })
-reify.Phrase.define("es").as( precursor => precursor.modify(item=>reify.lang.es(item.value)))
-/*reify.Phrase.prototype.es= function(subject)
+reify.Passage.define("es").as( precursor => precursor.modify(item=>reify.lang.es(item.value)))
+/*reify.Passage.prototype.es= function(subject)
 {	
 	return this.modify(item=>
 	{
@@ -746,7 +746,7 @@ reify.Phrase.define("es").as( precursor => precursor.modify(item=>reify.lang.es(
 		return reify.lang.es(item.value)
 	})
 }*/
-reify.Phrase.define("est").as (precursor => 
+reify.Passage.define("est").as (precursor => 
 {
 	return precursor.modify(item=>
 	{
@@ -759,14 +759,14 @@ reify.Phrase.define("est").as (precursor =>
 		else {return reify.lang.est(item.value)}
 	})
 })
-reify.Phrase.define("ing").as( precursor => precursor.modify(item=>reify.lang.ing(item.value)))
+reify.Passage.define("ing").as( precursor => precursor.modify(item=>reify.lang.ing(item.value)))
 
 
 reify.template.define("list").as((...data)=>
 {
 	return reify.template._`${reify.template._.ITEM.cycle.items()}${reify.template._.item().modify(t=>t.rank < t.total && t.total>2?", ":"")}${reify.template._.item().modify(t=>t.rank===1 && t.total===2?" and ":"")}${reify.template._.item().modify(t=>t.index===t.total-2 && t.total>2?"and ":"")}`.per.ITEMS.cull(...data)
 })
-reify.Phrase.define("s").as (precursor => 
+reify.Passage.define("s").as (precursor => 
 {
 	return precursor.modify(item=>
 	{
@@ -774,14 +774,14 @@ reify.Phrase.define("s").as (precursor =>
 		return reify.lang.s(item.value)
 	})
 })
-reify.template.define("a").as((...data)=> reify.Phrase.prototype.modify(item=>`${reify.lang.a(item.value)} ${item.value}`,...data))
-reify.Phrase.define("z").as(precursor =>precursor.modify(item=>reify.lang.z(item.value)))
+reify.template.define("a").as((...data)=> reify.Passage.prototype.modify(item=>`${reify.lang.a(item.value)} ${item.value}`,...data))
+reify.Passage.define("z").as(precursor =>precursor.modify(item=>reify.lang.z(item.value)))
 
 // #region inflected text
 // #region articles
 reify.template.define("some").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		var some=[]
 		var a=[]
@@ -806,7 +806,7 @@ reify.template.define("Some").as((...data)=>
 
 reify.template.define("the").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		var the=[]
 		var proper=[]
@@ -827,7 +827,7 @@ reify.template.define("The").as((...data)=>
 //I,we,you,he, she, it, they
 reify.template.define("I").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1 || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -839,7 +839,7 @@ reify.template.define("I").as((...data)=>
 })
 reify.template.define("we").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length===1 || results[0].number ===reify.lang.number.singular || results.quantity===1 ||results.ply_quantity===1)
 		{
@@ -854,7 +854,7 @@ reify.template.define("We").as((...data)=>
 })
 reify.template.define("you").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		return [{value:reify.lang.pronouns[results[0].gender ?? "epicene"].subjective[results[0].person ?? reify.lang.person.second]}]
 	},...data)	
@@ -865,7 +865,7 @@ reify.template.define("You").as((...data)=>
 })
 reify.template.define("he").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1 || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -880,7 +880,7 @@ reify.template.define("He").as((...data)=>
 })
 reify.template.define("she").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1 || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -895,7 +895,7 @@ reify.template.define("She").as((...data)=>
 })
 reify.template.define("it").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1 || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -910,7 +910,7 @@ reify.template.define("It").as((...data)=>
 })
 reify.template.define("they").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length===1 && results[0].number !==reify.lang.number.plural && !(results.quantity>1) && !(results.ply_quantity>1))
 		{
@@ -928,7 +928,7 @@ reify.template.define("They").as((...data)=>
 //me,us,him, her, them
 reify.template.define("me").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1  || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -939,7 +939,7 @@ reify.template.define("me").as((...data)=>
 })
 reify.template.define("us").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length===1  || results[0].number ===reify.lang.number.singular || results.quantity===1 ||results.ply_quantity===1)
 		{
@@ -950,7 +950,7 @@ reify.template.define("us").as((...data)=>
 })
 reify.template.define("them").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1  || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -970,7 +970,7 @@ reify.template.define("Them").as((...data)=>
 //#region verbs
 reify.template.define("are").as((...data)=>
 {
-	return reify.Phrase.prototype.transform(results=>
+	return reify.Passage.prototype.transform(results=>
 	{
 		if (results.length>1 || results[0].number ===reify.lang.number.plural || results.quantity>1 ||results.ply_quantity>1)
 		{
@@ -988,27 +988,27 @@ reify.template.define("Are").as((...data)=>
 //jane, train  runs
 //jack and jill run 
 
-reify.Phrase.prototype.inflect=function (...verb)
+reify.Passage.prototype.inflect=function (...verb)
 {
-	var subjectPhrase=this
-	return new class inflectPhrase extends reify.Phrase
+	var subjectPassage=this
+	return new class inflectPassage extends reify.Passage
 	{
 		constructor()
 		{
-			super(subjectPhrase,new reify.Phrase(...verb))
+			super(subjectPassage,new reify.Passage(...verb))
 			
 		}
 		generate()
 		{
 			super.generate()
-			var verbs = this.phrases[1].text.split(" ")
+			var verbs = this.passages[1].text.split(" ")
 			var does=(verbs.some(verb=>verb==="do")  && verbs.length>1)
 			var negation=verbs.some(verb=>verb==="not")
 			var aux=verbs.filter(verb=>reify.lang.modalVerbs.includes(verb.toLowerCase()))
 			var verb=verbs[verbs.length-1]
-			var subject=this.phrases[0].results
+			var subject=this.passages[0].results
 			var lowerCaseSubject=subject[0].value.toLowerCase()	
-			var subjectString=subjectPhrase.re?"":this.phrases[0].text
+			var subjectString=subjectPassage.re?"":this.passages[0].text
 			var verbString=""
 
 			if(subject.length>1 || subject[0].number===reify.lang.number.plural || subject[0].quantity>1 || subject[0].ply_number===reify.lang.number.plural || subject[0].ply_quantity >1 ||lowerCaseSubject==="i" || lowerCaseSubject==="you" ||lowerCaseSubject==="we" ||lowerCaseSubject==="they" )
@@ -1040,7 +1040,7 @@ reify.Phrase.prototype.inflect=function (...verb)
 				}
 				else  
 				{
-					this.results=[{value:this.phrases[1].text}]
+					this.results=[{value:this.passages[1].text}]
 				}
 			}
 			if(reify.tense===reify.lang.future) //future
