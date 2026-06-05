@@ -14,6 +14,19 @@ https://whitewhalestories.com
 */
 
 const reify = {}
+
+reify.past=0 //I ATE
+reify.present=1 //I EAT
+reify.progressive=2 //I AM EATING
+reify.future=3 //I WILL EAT
+reify.perfect=4 //I HAVE EATEN
+
+reify.tense=reify.past
+
+reify.affirmative=0
+reify.negative=1
+
+
 // #region utility functions
 reify.util={_seed:undefined}
 
@@ -2443,60 +2456,7 @@ reify.tense={imperative:0,present:1, past:2, perfect:3}
 reify._viewpoint=null
 reify.undoLength=10
 reify.lang={}
-reify.phrasebook_handler=
-{
-	get: function(target, property,receiver) 
-	{ 
-		if (Reflect.has(target,property)){return Reflect.get(target,property,receiver)}
-		else 
-		{
-			//magic properties
-			target[property]=new Proxy({},reify.phrasebook_handler)
-			return target[property]
-		}
-	}
-}
-reify.phrasebook=new Proxy({},reify.phrasebook_handler)
 
-reify.configure=function(options)
-{
-	//DEFECT TO DO seed, name, author, etc.
-}
-
-// #region storytelling
-reify.tell=function(timeline="player") 
-{
-	while(this.storyline[timeline].length>0)
-	{
-		Object.keys(this.storyline).forEach(timeline=>
-		{
-			this.storyline[timeline].forEach((episode,index)=>
-			{
-				if (!episode.start() || episode.start() <= this.clock)
-				{
-					if (episode.resolve(this.clock).told){episode.narrate()}
-				}
-			})
-			this.storyline[timeline]=this.storyline[timeline].filter(episode=>!episode.told)
-		})
-		this.tick()
-	}	
-	this.turn++
-	return this
-}
-
-reify.introduce=function(episode) 
-{
-	var timeline=episode.timeline()
-	if (!this.storyline.hasOwnProperty(timeline))
-	{
-		this.storyline[timeline]=[]
-	}
-
-	this.storyline[timeline].push(episode)
-	return this
-}	
-// #endregion
 
 /* A turn is a processing of all the episodes on the the storyline.  An episode is a plotpoint.narrate with bound arguments.*/ 
 
@@ -2508,6 +2468,7 @@ reify.tick=function(ticks=1)
 // #region semantics
 
 reify.net={}  //semantic network, where nouns and facts live.
+reify.plot={} //rete structure where rules live.
 reify.classes={}  //Classes that users might want to extend
 reify.proxies={}
 reify.proxies.newless= //instantiate a class without new operator
@@ -2685,14 +2646,23 @@ reify.classes.fact= class Fact
                 this.history[reify.turn]={clock:reify.clock,tense:this.tense,mood:this.mood,polarity:this.polarity }
                 fact=reify.net[statement.id]=this
                 
+                
             }
-             fact.nouns.forEach((noun,index)=>
+            fact.nouns.forEach((noun,index)=>
             {
                 let i=noun._indexes
                 if (i[index] instanceof reify.Reality) i[index].add(this)
                 else i[index]=new reify.Reality(this)
             })
             fact.predicate._index.add(this)
+
+            /*
+                add noun[0].verb.noun[1].verb_prep.noun2.verb_prep_prep.noun3.etc to plot
+            */ 
+
+
+
+
             return fact
         }
         get subject(){return this.nouns[0]}
@@ -2719,7 +2689,9 @@ reify.classes.noun=class Noun
                 })
 			let noun=new Proxy(this,reify.proxies.noun)
 			reify.net[this.id]=noun
+            reify.plot[this.id]={}
 			reify.glossary.register(this.name).as({part: "noun",  key:this.id})
+        
 			return noun
 		}
 		aka(literals, ...expressions)
@@ -2775,7 +2747,8 @@ reify.classes.Predicate=class Predicate
 		{
 			reify.glossary.register(preposition).as({part:"preposition", key:preposition, predicate:this})
 		})	
-		//return new Proxy(this,reify.proxies.predicate)		for getter/setters do we need this?
+		reify.plot[this.id]={[reify.present]:{[reify.affirmative]:{},[reify.negative]:{}},
+                            [reify.past]:{[reify.affirmative]:{},[reify.negative]:{}}}
         return this
 	}
 
@@ -2805,37 +2778,37 @@ reify.classes.Predicate=class Predicate
 
             let complement=" "+particles.slice(1).join(" ")
             reify.glossary.register("is"+complement)//foyer is north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
             reify.glossary.register("are"+complement)//trees are north of meadow
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("are not"+complement)//trees are not north of meadow
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
             reify.glossary.register("was"+complement)//foyer was north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("was not"+complement)//foyer was north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse})
             reify.glossary.register("were"+complement)//trees were north of meadow
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("were not"+complement)//trees were not north of meadow
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse}) 
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse}) 
         }
         else
         {
             
             reify.glossary.register(reify.lang.es(verb)). //player carries ring
-                as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+                as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("does not "+verb) //player does not carry ring
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
             reify.glossary.register(verb) //people carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("do not "+verb) //people do not carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.lang.present,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
             reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.affirmative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.lang.past,polarity:reify.lang.negative,converse:converse})
+                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse})
 
         }
 
@@ -2989,7 +2962,7 @@ reify.Reality=class Reality
     }
     now(literals, ...expressions)
     {
-        // for each fact, replace each placeholder with noun id 
+        // for each fact, replace each insertion with noun id 
         // reify each statement
         // To Do: process resulting reality through plot.
         //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
@@ -3009,7 +2982,7 @@ reify.Reality=class Reality
                 if (text.startsWith("[") && text.endsWith("]"))
                 {
                     text=text.slice(1,-1)
-                    let noun=this.placeholder[text]
+                    let noun=this.insertion[text]
                     if (noun)
                     {
                         text= fact.nouns[noun.index].id
@@ -3039,7 +3012,7 @@ EBNF:
     rightParen=>/^\)/
     period=>/^\./
     wildcard=>/^_[a-zA-Z]\w*_/
-	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+	insertion=>/^\^[a-zA-Z]\w*[a-zA-Z _]#/
 
     selections=>(selection period)+ //select existing facts into a reality
     selection=>subject predicate 
@@ -3051,7 +3024,7 @@ EBNF:
     adjectives=>lexiconAdjective
     attributive=>lexiconAttributive
     relativeClauses=>relativizer predicate
-	noun=>lexiconNoun|wildcard|placeholder
+	noun=>lexiconNoun|wildcard|insertion
 	predicate=>verb directObject prepositionalPhrases*
     verb=>lexiconVerb
     prepositionalPhrases=>preposition target
@@ -3063,8 +3036,8 @@ EBNF:
     statement=>subject predicate 
 	subject=>fact|noun
     fact=>leftBracket argument gerund directObject prepositionalPhrases* rightBracket
-    noun=>lexiconNoun|placeholder
-	placeholder=>/^#[a-zA-Z]\w*[a-zA-Z _]#/
+    noun=>lexiconNoun|insertion
+	insertion=>/^\^#[a-zA-Z]\w*[a-zA-Z _]#/
     predicate=>verb directObject prepositionalPhrases*
     prepositionalPhrases=>preposition target
     directObject=fact |noun | adjective //adjective valid for copular predicates only
@@ -3094,7 +3067,7 @@ reify.dsl={}
 
 reify.dsl.noun=reify.Rule().configure({mode:reify.Rule.apt})
 	.snip(0)
-	.snip(1) //placeholder
+	.snip(1) //insertion
 reify.dsl.noun[0]
     .configure({filter:(definition)=>definition?.part==="noun"})	
 reify.dsl.noun[1].configure({regex:/^#[a-zA-Z]\w*/})
@@ -3105,12 +3078,15 @@ reify.dsl.verb=reify.Rule().configure({filter:(definition)=>definition?.part==="
 /*statement grammar 
     statements=>(statement period)+  //create one or more facts
     statement=>subject verb directObject prepositionalPhrases*
-    subject=>lexiconNoun|placeholder
-    placeholder=>/^#[a-zA-Z]\w*[a-zA-Z]/
+    subject=>lexiconNoun|insertion
+    insertion=>/^\^[a-zA-Z]\w*[a-zA-Z]/
     prepositionalPhrases=>preposition target
     directObject noun | adjective //adjective valid for copular predicates only
     target=>noun  
 */
+
+
+
 reify.dsl.statements=reify.Rule()
     .snip("statement").snip("period")
     .configure({maximum:Infinity, semantics:interpretation=>
@@ -3169,8 +3145,8 @@ reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl
 /*statement grammar 
     statements=>(statement period)+  //create one or more facts
     statement=>subject verb directObject prepositionalPhrases*
-    subject=>lexiconNoun|placeholder
-    placeholder=>^#[a-zA-Z]\w*
+    subject=>lexiconNoun|insertion
+    insertion=>^#[a-zA-Z]\w*
     prepositionalPhrases=>preposition target
     directObject noun | adjective //adjective valid for copular predicates only
     target=>noun  
@@ -3187,13 +3163,38 @@ reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl
     factor=>leftParen condition rightParen
 */
 
+
+
+/*Scene DSL:
+
+/*
+condition => term termOperations*
+termOperations=> orOperator term
+term => factor factorOperations*
+factorOperations=> andOperator factor
+factor => operand
+factor=>notOperator factor
+factor=>leftParen condition rightParen
+operand => trigger | pattern
+trigger => when pattern
+pattern => subject verb directObject prepositionalPhrases*
+subject => element | wildcard | insertion
+prepositionalPhrases =>preposition target
+directObject =>  element | wildcard | insertion
+target => element | wildcard | insertion
+insertion=>/^\^[a-zA-Z]\w*[a-zA-Z]/
+wildcard=>/^_[a-zA-Z]\w*_/
+*/
+
+////selection grammar
+
 /*Selection grammar
     selection=subject verb directObject prepositionalPhrases* //select existing facts into a reality
 	subject=>nounClause
     nounPhrase=>adjectives* noun relativeClauses*  //to do: make sure kind generates an adjective for the kind.  I think it does
     adjectivePhrase=>lexiconAdjective
     relativeClauses=>relativizer verb directObject prepositionalPhrases*
-	noun=>lexiconNoun|wildcard|placeholder  //wildcard is the form _wildcard_name_ placeholder is of the form #wildcard_name
+	noun=>lexiconNoun|wildcard|insertion  //wildcard is the form _wildcard_name_ insertion is of the form #wildcard_name
 	verb=>lexiconVerb
     prepositionalPhrases=>preposition target
     directObject=>nounClause
@@ -3210,13 +3211,9 @@ reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl
 
 
 */
-
-
-
-////selection grammar
 reify.dsl.adjective=reify.Rule().configure({filter:(definition)=>definition?.part==="adjective",semantics:interpretation=>
 {
-    interpretation.gist= {filter:interpretation.gist.definition.value,specificity:[0,1]}
+//    interpretation.gist= {filter:interpretation.gist.definition.value,specificity:[0,1]}
     return true
 }})
 
@@ -3224,25 +3221,25 @@ reify.dsl.adjectivePhrase=reify.Rule()
     .snip("term").snip("termOperations")
     .configure({minimum:0,semantics:interpretation=>
     {
-        let gist=interpretation.gist
+  /*      let gist=interpretation.gist
         let term=gist.term
         let operations=gist.termOperations??[]
         let specificity=term.specificity[1] + operations.reduce((a,b)=>a+b.term.specificity[1],0)
         let filter=noun=>operations.reduce((a,b)=>a || b.filter(noun),term.filter(noun))
-        interpretation.gist={filter:filter,specificity:[0,specificity]}
+        interpretation.gist={filter:filter,specificity:[0,specificity]}*/
         return true
     }})
 reify.dsl.adjectivePhrase.term
     .snip("factor").snip("factorOperations")
     .configure({semantics:interpretation=>
     {
-        let gist=interpretation.gist
+       /* let gist=interpretation.gist
         let factor=gist.factor
         let operations=gist.factorOperations??[]
         let specificity=factor.specificity[1] + operations.reduce((a,b)=>a+b.factor.specificity[1],0)
         let filter=noun=>operations.reduce((a,b)=>a && b.filter(noun),factor.filter(noun))
         interpretation.gist={filter:filter,specificity:[0,specificity]}
-        
+        */
         return true
     }})
 reify.dsl.adjectivePhrase.termOperations.snip("orOperator").snip("term",reify.dsl.adjectivePhrase.term)
@@ -3354,7 +3351,7 @@ reify.dsl.selection=reify.Rule().snip("subject",reify.dsl.nounPhrase).snip("pred
 
             specificity[1]+=target.adjectivePhrase?.specificity[1]??0
         })
-        interpretation.gist={predicate:verb.predicate,tense:verb.tense,polarity:verb.polarity,arguments:argumentList,wildcards:wildcards,specificity:specificity,nouns:nouns}
+        interpretation.gist={predicate:verb.predicate,tense:verb.tense,polarity:verb.polarity,arguments:argumentList,wildcards:wildcards,specificity:specificity,nouns:nouns}*/
         return true
 
     }})
@@ -3377,19 +3374,11 @@ reify.dsl.selections=reify.Rule()
     .snip("selection",reify.dsl.selection).snip("period")
     .configure({maximum:Infinity, semantics:interpretation=>
     {
-        //interpretation.gist=interpretation.gist.reduce((a,b)=>a.concat(b.selection),[])
+       
         let selections=interpretation.gist.map(a=>a.selection)
-        let selector=(wildcards,placeholders)=>
+        let selector=(wildcards,insertions)=>
         {
             const reality=new reify.Reality()
-            
-            //resolve wildcards and placeholders: _thing_, #thing
-            /*      wildcards.npc={index:0,noun:true}
-                    wildcards.thing={index:1,noun:true}
-                    wildcards.action={predicate:true}
-            */
-
-            
             selections.forEach(selection=>
             {
                 const r=new reify.Reality
@@ -3405,8 +3394,8 @@ reify.dsl.selections=reify.Rule()
                     else if (noun.startsWith("#")) 
                     {
                         
-                        if (r.isEmpty) r.add(reify.net[placeholders[noun.slice(1)]]._indexes[index])
-                        else r.filter(reify.net[placeholders[noun.slice(1)]]._indexes[index])
+                        if (r.isEmpty) r.add(reify.net[insertions[noun.slice(1)]]._indexes[index])
+                        else r.filter(reify.net[insertions[noun.slice(1)]]._indexes[index])
 
                     }
                     else
@@ -3447,7 +3436,7 @@ reify.dsl.selections=reify.Rule()
         interpretation.gist={selector:selector,specificity:specificity,
              nouns:selections.reduce((a,b)=>{Object.values(b.nouns).forEach(noun=>a.add(noun)); return a},new Set()),
              predicates:selections.reduce((a,b)=>a.add(b.predicate), new Set())}         
-           // nouns:selections.reduce((a,b)=>Object.assign(a,b.nouns),{}),predicates:selections.map((selection)=>selection.predicate)}         
+           // nouns:selections.reduce((a,b)=>Object.assign(a,b.nouns),{}),predicates:selections.map((selection)=>selection.predicate)}  */       
         return true
     }})
 reify.dsl.selections.period.configure({regex:/^\./,lax:true})
@@ -3485,6 +3474,20 @@ reify.dsl.condition.term.factor[2].leftParen.configure({regex:/^\(/})
 reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
 
 reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 reify.select=function(literals, ...expressions)
