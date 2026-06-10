@@ -8,7 +8,7 @@
        <script src="reify.js"></script>
        <script src="reify-en-us.js"></script>
        <script>
-        const { noun, adjective, $:net, predicate, facts, select,scene } = reify
+        const { term, adjective, $:net, predicate, facts, select,scene } = reify
         const _=reify.template._
        // predicate`give to`
         predicate`carry`.converse`be carried by`
@@ -19,24 +19,24 @@
         predicate`be east of`.converse`be west of`
         predicate`be acquaintance of`.converse`be acquaintance of`*/
         adjective`shiny,dull`.describes`surface` 
-        noun`direction`.direction(true)
-        noun`north`.kind`direction`
-        noun`place`.place(true)
-        noun`room`.kind`place`.room(true)
+        term`direction`.direction(true)
+        term`north`.kind`direction`
+        term`place`.place(true)
+        term`room`.kind`place`.room(true)
         
-        noun`portal`.portal(true)
-        noun`bar door`.kind`portal`
+        term`portal`.portal(true)
+        term`bar door`.kind`portal`
         
-        noun`person`.person(true)
+        term`person`.person(true)
 
-        noun`player`.height(72)
-        noun`alice`
-        noun`people`
-        noun`ring`
-        noun`treasure chest`.aka`chest`
-        noun`plan`
+        term`player`.height(72)
+        term`alice`
+        term`people`
+        term`ring`
+        term`treasure chest`.aka`chest`
+        term`plan`
 
-        noun`foyer`.name`Foyer of the Opera House`.aka`entryway`
+        term`foyer`.name`Foyer of the Opera House`.aka`entryway`
             .kind`room`
             .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
 
@@ -45,10 +45,15 @@
 
        // facts`player carries ring. player does not carry ring. some people carry treasure chest. some people do not carry treasure chest. player carried ring. player did not carry ring. [The player carrying the ring] endangers the plan. [the player not carrying the ring] endangers the plan. [the player having carried the ring] endangers the plan. [the player having not carried the ring] endangers the plan. Alice knows about [the player carrying the ring]. Alice knows about [the player not carrying the ring]. the carried ring endangers the plan. [[the player carrying the ring] endangering the plan] worries alice. [the player carrying [the ring endangering the plan]] worries alice.`
     facts`player carries ring.`
+//reify.select`player carries shiny or dull ring.`
+
+
+
+
   //facts`ring is carried by player.`
-scene`player carries shiny or dull ring.`
+/*scene`player carries shiny or dull ring.`
     .action((reality)=>console.log(reality))
-    ._`That's a nice ring!`
+    ._`That's a nice ring!`*/
 
     //facts`player carries ring.`
     //facts`player does not carry ring.`
@@ -80,7 +85,7 @@ bracket notation [wildcard name] will now be used for placeholders instead of #w
 
     facts`[the player carrying [the ring endangering the plan]] worries alice.`
 
-    Just like nouns, a fact must be pre-existing (negative polarity is ok.) before it can be used to create another fact. If the fact is missing the creation statement is still successful.  It just doesn't create the fact. So, it's an implied condition.
+    Just like terms, a fact must be pre-existing (negative polarity is ok.) before it can be used to create another fact. If the fact is missing the creation statement is still successful.  It just doesn't create the fact. So, it's an implied condition.
 
     Placeholders can be used in gerund phrases.
 

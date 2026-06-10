@@ -44,9 +44,9 @@ reify.glossary
 
 // #region grammar
 
-reify.grammar.command=reify.Rule()
+reify.grammar.command=reify.Syntax()
 
-reify.grammar.nounPhrase=reify.Rule()
+reify.grammar.nounPhrase=reify.Syntax()
     .snip("article").snip("adjectives").snip("noun").snip("adjunct").snip("conjunct")
 
 reify.grammar.nounPhrase.article.configure({minimum:0, filter:(definition)=>definition?.part==="article"})
@@ -66,15 +66,15 @@ reify.grammar.nounPhrase.conjunct
     .snip("conjunction").snip("nounPhrase",reify.grammar.nounPhrase)
 reify.grammar.nounPhrase.conjunct.conjunction.configure({filter:(definition)=>definition?.part==="conjunction"})
 
-reify.grammar.preposition=reify.Rule().configure({filter:(definition)=>definition?.part==="preposition"})
+reify.grammar.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
 reify.grammar.command.snip("subject",reify.grammar.nounPhrase.clone()).snip("verb").snip("object")
-reify.grammar.ioPhrase=reify.Rule().configure({mode:reify.Rule.any})
+reify.grammar.ioPhrase=reify.Syntax().configure({mode:reify.Syntax.any})
     .snip(1)
     .snip(2)
 reify.grammar.ioPhrase[1].snip("target",reify.grammar.nounPhrase)    
 reify.grammar.ioPhrase[2].snip("command",reify.grammar.command)
 
-reify.grammar.indirect=reify.Rule().configure({minimum:0})
+reify.grammar.indirect=reify.Syntax().configure({minimum:0})
     .snip("preposition",reify.grammar.preposition).snip("phrase",reify.grammar.ioPhrase)
 
 reify.grammar.command.subject.configure({minimum:0 })
@@ -83,8 +83,8 @@ reify.grammar.command.subject.noun.configure({separator:/^\s*,\s*|^\s+/})
 
 reify.grammar.command.verb.configure({filter: (definition)=>definition.part==="verb"})
 
-reify.grammar.command.object=reify.Rule()
-.configure({minimum:0, mode:reify.Rule.any})
+reify.grammar.command.object=reify.Syntax()
+.configure({minimum:0, mode:reify.Syntax.any})
 .snip(1)  //verbalParticle(required)/direct/indirect
 .snip(2)  //direct/verbal particle(optional)/indirect
 .snip(3)  //indirect/direct
@@ -259,37 +259,37 @@ reify.lang.conjugatePredicate=(predicate,voice)=>
 
 		let complement=" "+particles.slice(1).join(" ")
         reify.glossary.register("is"+complement)//foyer is north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
         reify.glossary.register("are"+complement)//trees are north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("are not"+complement)//trees are not north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
         reify.glossary.register("was"+complement)//foyer was north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("was not"+complement)//foyer was north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice})
         reify.glossary.register("were"+complement)//trees were north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("were not"+complement)//trees were not north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative,voice:voice}) 
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice}) 
 	}
 	else
 	{
         
         reify.glossary.register(reify.lang.es(verb)). //player carries ring
-            as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative,voice:voice})
+            as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("does not "+verb) //player does not carry ring
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
         reify.glossary.register(verb) //people carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
         reify.glossary.register("do not "+verb) //people do not carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
         reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative})
         reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative,voice:voice})
+            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice})
 
     }
 
@@ -305,31 +305,23 @@ reify.lang.conjugatePredicate=(predicate,voice)=>
 reify.lang.conjugatePassive=(verb,predicate)=>
 {
     reify.glossary.register("is "+verb). //ring is carried by player
-        as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative})
     reify.glossary.register("is not "+verb) //ring is not carried by player
-        .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative})
     reify.glossary.register("are "+verb) //coins are carried by player
-        .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.affirmative})
+        .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative})
     reify.glossary.register("are not "+verb) //coins are not carried by player
-        .as({part:"verb",predicate:predicate,tense:reify.lang.present,polarity:reify.lang.negative})
+        .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative})
     reify.glossary.register("was "+verb) //ring was carried by player.
-        .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative})
     reify.glossary.register("was not "+verb) //ring was not carried by player.
-        .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})
+        .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative})
     reify.glossary.register("were "+verb) //coins were carried by player.
-        .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.affirmative})
+        .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative})
     reify.glossary.register("were not "+verb) //coins were not carried by player.
-        .as({part:"verb",predicate:predicate,tense:reify.lang.past,polarity:reify.lang.negative})
+        .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative})
 }
 
-reify.lang.past=0 //I ATE
-reify.lang.present=1 //I EAT
-reify.lang.progressive=2 //I AM EATING
-reify.lang.future=3 //I WILL EAT
-reify.lang.perfect=4 //I HAVE EATEN
-//Unused: reify.lang.pluperfect=5 //I HAD EATEN
-
-reify.tense=reify.lang.past  //DEFECT REMOVE
 // # endregion
 
 // #region mood
@@ -345,11 +337,6 @@ reify.lang.active=0 //I ATE
 reify.lang.passive=1 //Cookie IS EATEN BY me.
 
 reify.tense=reify.lang.voice=reify.lang.active //DEFECT REMOVE
-
-// #region polarity
-reify.lang.affirmative=0
-reify.lang.negative=1
-// #endregion
 
 
 // #endregion
@@ -1023,7 +1010,7 @@ reify.Passage.prototype.inflect=function (...verb)
 
 			if (negation && aux.length===0 ){does=true}
 			
-			if(reify.tense===reify.lang.present ) //present  she goes, he does go, he could go  not go=> does not go
+			if(reify.tense===reify.present ) //present  she goes, he does go, he could go  not go=> does not go
 			{
 				if (subject.length>0) 
 				{
@@ -1043,20 +1030,20 @@ reify.Passage.prototype.inflect=function (...verb)
 					this.results=[{value:this.passages[1].text}]
 				}
 			}
-			if(reify.tense===reify.lang.future) //future
+			if(reify.tense===reify.future) //future
 			{
 				verbString=verbString+(negation?"will not ":"will ")+verb
 				this.results=[{value:(subjectString +" "+verbString).trim()}]
 			}
-			if(reify.tense===reify.lang.past) //past
+			if(reify.tense===reify.past) //past
 			{
 				if(!does ){verb=reify.lang.ed(verb)}
 				verbString=(does?"did ":"")+(negation?"not ":"")+verb
 				this.results=[{value:(subjectString +" "+verbString).trim()}]
 			}
 
-			//reify.lang.perfect=3 //I have gone
-			if(reify.tense===reify.lang.perfect ) //coukld not go =>could not have gone  not go => have not gone
+			//reify.perfect=3 //I have gone
+			if(reify.tense===reify.perfect ) //coukld not go =>could not have gone  not go => have not gone
 			{
 //could have gone, could not have gone, have gone, hadn'tgone
 //has gone, has not gone
