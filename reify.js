@@ -13,13 +13,7 @@ https://reify-fiction.org
 @bikibird
 */
 
-const reify = function()
-{
-   
-    //To do: populate plot with facts
-    return this
-}
-
+const reify ={}
 reify.past=0 //I ATE
 reify.present=1 //I EAT
 reify.progressive=2 //I AM EATING
@@ -2471,6 +2465,96 @@ reify.tick=function(ticks=1)
 }
 
 // #region semantics
+reify.Reality=class Reality 
+{
+    
+    constructor(...facts)  //Realities can be made from facts or other realities
+    {
+        Object.defineProperty(this, "wildcards",{value:{},enumerable:false,writable:true})
+        Object.defineProperty(this, "set",{value:new Set(),enumerable:false,writable:true})
+        facts.forEach(fact=>
+        {
+            if (fact instanceof reify.Reality) this.set=this.set.union(fact.set)
+            else if (fact instanceof reify.classes.fact) this.set.add(fact)
+
+        })
+        return this
+
+    }
+    add(...items)
+    {
+        items.forEach(item=>
+        {
+            if (item instanceof reify.classes.fact)  this.set.add(item)
+            else if (item instanceof reify.Reality) this.set=this.set.union(item.set)
+
+        })
+        return this
+    }
+
+    filter(...realities) //intersection of two realities sets
+    {
+        realities.forEach(reality=>
+        {
+            this.set.intersection(reality.set)
+        
+        })
+        
+        return this
+    }
+    get isEmpty(){return this.set.size===0}
+    get size(){return this.set.size}
+    subtract(...items)
+    {
+        items.forEach(item=>
+        {
+            if (item instanceof reify.classes.fact)  this.set.delete(item)
+            else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
+        })
+        
+        return this
+    }
+    forEach(task)
+    {
+        this.set.forEach(task)
+        return this
+    }
+    now(literals, ...expressions)
+    {
+        // for each fact, replace each placeholder with term id 
+        // reify each statement
+        // To Do: process resulting reality through plot.
+        //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
+        //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
+
+        /*
+            get reality of facts
+            gather scenes from terms and predicates
+            sort scenes into an array named plot by specificity.
+            call plot[0].unfold(plot[].slice(1),this)
+        */
+        let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
+        this.set.forEach(fact=>
+        {
+            let revisedSource=source.map(text=>
+            {
+                if (text.startsWith("[") && text.endsWith("]"))
+                {
+                    text=text.slice(1,-1)
+                    let term=this.placeholder[text]
+                    if (term)
+                    {
+                        text= fact.terms[term.index].id
+                    }
+                }
+                return text
+            }).join("")
+            console.log(reify.facts(revisedSource))
+        })
+            
+        return this
+    }
+}
 
 reify.net={}  //semantic network, where terms and facts live. DEFECT:Obsolete?
 reify.plot={reality:new reify.Reality()} //plot structure where scenes and facts live.
@@ -2619,7 +2703,7 @@ reify.proxies.term=
 	}
 	
 }
-reify.term=function(literals, ...expressions) {return new reify.classes.term(literals,...expressions)}
+reify.name=function(literals, ...expressions) {return new reify.classes.term(literals,...expressions)}
 // #endregion
 
 // #region classes
@@ -2651,7 +2735,7 @@ reify.classes.fact= class Fact
                 Object.defineProperty(this, "history",{value:[],enumerable:false})
                 this.history[reify.turn]={clock:reify.clock,tense:this.tense,mood:this.mood,polarity:this.polarity }
                 fact=reify.net[statement.id]=this
-                plot.reality.add(this)
+                reify.plot.reality.add(this)
                 
                 
             }
@@ -2858,11 +2942,13 @@ reify.classes.Scene=class Scene
             else  //add scene to terms
             {
                 let gist=interpretations[0].gist
+                console.log(gist)
                 Object.defineProperties(this,
                 {   
                     condition:{value:gist.condition,enumerable:false,writable:false},
                     storylines:{value:[],enumerable:false,writable:true},
-                    plot:{value:(reality)=>true,enumerable:false,writable:true}                    
+                    plot:{value:(reality)=>true,enumerable:false,writable:true},                 
+                    specificity:{value:gist.specificity,enumerable:false,writable:false}
                 })
                 gist.plotLines.forEach(plotLine=>plotLine.add(this))
                 
@@ -2903,96 +2989,6 @@ reify.predicate=function(literals, ...expressions)
 // #endregion
 
 // #region reality
-reify.Reality=class Reality 
-{
-    
-    constructor(...facts)  //Realities can be made from facts or other realities
-    {
-        Object.defineProperty(this, "wildcards",{value:{},enumerable:false,writable:true})
-        Object.defineProperty(this, "set",{value:new Set(),enumerable:false,writable:true})
-        facts.forEach(fact=>
-        {
-            if (fact instanceof reify.Reality) this.set=this.set.union(fact.set)
-            else if (fact instanceof reify.classes.fact) this.set.add(fact)
-
-        })
-        return this
-
-    }
-    add(...items)
-    {
-        items.forEach(item=>
-        {
-            if (item instanceof reify.classes.fact)  this.set.add(item)
-            else if (item instanceof reify.Reality) this.set=this.set.union(item.set)
-
-        })
-        return this
-    }
-
-    filter(...realities) //intersection of two realities sets
-    {
-        realities.forEach(reality=>
-        {
-            this.set.intersection(reality.set)
-        
-        })
-        
-        return this
-    }
-    get isEmpty(){return this.set.size===0}
-    get size(){return this.set.size}
-    subtract(...items)
-    {
-        items.forEach(item=>
-        {
-            if (item instanceof reify.classes.fact)  this.set.delete(item)
-            else if (item instanceof reify.Reality) this.set=this.set.intersection(item)
-        })
-        
-        return this
-    }
-    forEach(task)
-    {
-        this.set.forEach(task)
-        return this
-    }
-    now(literals, ...expressions)
-    {
-        // for each fact, replace each placeholder with term id 
-        // reify each statement
-        // To Do: process resulting reality through plot.
-        //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
-        //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
-
-        /*
-            get reality of facts
-            gather scenes from terms and predicates
-            sort scenes into an array named plot by specificity.
-            call plot[0].unfold(plot[].slice(1),this)
-        */
-        let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
-        this.set.forEach(fact=>
-        {
-            let revisedSource=source.map(text=>
-            {
-                if (text.startsWith("[") && text.endsWith("]"))
-                {
-                    text=text.slice(1,-1)
-                    let term=this.placeholder[text]
-                    if (term)
-                    {
-                        text= fact.terms[term.index].id
-                    }
-                }
-                return text
-            }).join("")
-            console.log(reify.facts(revisedSource))
-        })
-            
-        return this
-    }
-}
 
 // #endregion
 
@@ -3022,9 +3018,9 @@ EBNF:
     attributive=>lexiconAttributive
     relativeClauses=>relativizer predicate
 	term=>lexiconTerm|wildcard|placeholder
-	predicate=>verb directObject prepositionalPhrases*
+	predicate=>verb directObject prepositionalPhrase*
     verb=>lexiconVerb
-    prepositionalPhrases=>preposition target
+    prepositionalPhrase=>preposition target
     directObject=>termClause
     target=>termClause
 
@@ -3032,11 +3028,11 @@ EBNF:
     statements=>(statement period)+  //create one or more facts
     statement=>subject predicate 
 	subject=>fact|term
-    fact=>leftBracket argument gerund directObject prepositionalPhrases* rightBracket
+    fact=>leftBracket argument gerund directObject prepositionalPhrase* rightBracket
     term=>lexiconTerm|placeholder
 	placeholder=>/^\^#[a-zA-Z]\w*[a-zA-Z _]#/
-    predicate=>verb directObject prepositionalPhrases*
-    prepositionalPhrases=>preposition target
+    predicate=>verb directObject prepositionalPhrase*
+    prepositionalPhrase=>preposition target
     directObject=fact |term | adjective //adjective valid for copular predicates only
     target=>fact|term
 
@@ -3069,25 +3065,34 @@ reify.dsl={}
 
 reify.dsl.argument=reify.Syntax().configure({mode:reify.Syntax.apt})
     .snip("element")
-    .snip("wildcard")
-    .snip("placeholder")
-reify.dsl.argument.element.configure({filter:(definition)=>definition?.part==="term"})	
-reify.dsl.argument.wildcard.configure({regex:/^_[a-zA-Z]\w*_/}) //invalid option for statements
-reify.dsl.argument.placeholder.configure({regex:/^\[[a-zA-Z]\w*\]/}) 
+    .snip("wildcard")    
+reify.dsl.argument.element.configure({filter:(definition)=>definition?.part==="term",semantics:interpretation=>
+    {
+        console.log(interpretation)
+        return true
+    }})	
+reify.dsl.argument.wildcard.configure({regex:/^\[[a-zA-Z]\w*\]/, semantics:interpretation=>
+    {
+        console.log(interpretation)
+        return true
+    }})	 //invalid option for statements
 
 reify.dsl.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
 
-reify.dsl.prepositionalPhrases.configure({minimum:0})
-    .snip(target,reify.dsl.argument).snip(preposition,reify.dsl.preposition)
+reify.dsl.prepositionalPhrase=reify.Syntax().configure({minimum:0, maximum:Infinity})
+    .snip("target",reify.dsl.argument).snip("preposition",reify.dsl.preposition)
 
-reify.dsl.verb=reify.Syntax().configure({filter:(definition)=>definition?.part==="verb"})
-
+reify.dsl.verb=reify.Syntax().configure({filter:(definition)=>definition?.part==="verb", semantics:interpretation=>
+    {
+        console.log(interpretation)
+        return true
+    }})	
 
 /*statement grammar 
     statements=>(statement period)+  //create one or more facts
-    statement=>subject verb directObject prepositionalPhrases*
+    statement=>subject verb directObject prepositionalPhrase*
     subject=>argument 
-    prepositionalPhrases=>preposition target
+    prepositionalPhrase=>preposition target
     directObject=>argument
     target=>argument
 */
@@ -3101,7 +3106,7 @@ reify.dsl.statements=reify.Syntax()
     }})
 reify.dsl.statements.period.configure({regex:/^\./,lax:true})
 reify.dsl.statements.statement=reify.Syntax()
-    .snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
+    .snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrase",reify.dsl.prepositionalPhrase)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
         let gist =interpretation.gist
@@ -3110,7 +3115,7 @@ reify.dsl.statements.statement=reify.Syntax()
         let verb=gist.verb.definition
         let predicate=verb.predicate
         
-        let prepositions=(gist.prepositionalPhrases??[]).map(preposition=>preposition.definition.key)
+        let prepositions=(gist.prepositionalPhrase??[]).map(preposition=>preposition.definition.key)
         //do prepositions match predicate?
         if (prepositions.length !== predicate.prepositions.length) return false 
         prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
@@ -3127,7 +3132,7 @@ reify.dsl.statements.statement=reify.Syntax()
             argumentList.push(reify.net[subject.definition.key])
             argumentList.push(reify.net[directObject.definition.key])
         }
-        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push(reify.net[phrase.target.definition.key]))
+        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(reify.net[phrase.target.definition.key]))
 
         let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)+" "+argumentList[1].id
         for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
@@ -3136,35 +3141,21 @@ reify.dsl.statements.statement=reify.Syntax()
         return true
 
     }})
-    reify.dsl.statements.statement.prepositionalPhrases.configure({minimum:0})
+    reify.dsl.statements.statement.prepositionalPhrase.configure({minimum:0})
     reify.statementParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.statements, boundary:/^[\.]/,separator:/^[\s\,]+/ })
 
 
-/*Scene DSL:
+/*selection DSL:
 
 /*
-    condition => term termOperations*
-    termOperations=> orOperator term
-    term => factor factorOperations*
-    factorOperations=> andOperator factor
-    factor => operand
-    factor=>notOperator factor
-    factor=>leftParen condition rightParen
-    operand => trigger | pattern
-    trigger => when pattern
-    argument => element | wildcard | placeholder
-    pattern => subject verb directObject prepositionalPhrases*
-    subject =>argument
-    prepositionalPhrases =>preposition target
-    directObject => argument
-    target => argument
+    
 
-    `(when _someone_ carries _something_ or when _someone_ wears _something_) and [something] is magical and when [something] surface is _appearance_`
-    returns
-    scene.elements=[
-        {someone:player, something:globe, appearance:cloudy,chain:[player carries globe, globe is magical, globe surface is shiny]},
-        {someone:player, something:ring, appearance:shiny, chain:[player wears ring, ring is magical, ring is shiny]},
-        {someone:alice, something:diadem, appearance:dull, chain:[alice wears diadem, diadem is magical, diadem is dull ]},
+    `(when [someone] carries [something union  or [someone] wears [something]) and [something] is magical and when [something] surface is [appearance] `
+    returns the scene elements
+    [
+        {someone:player, something:globe, appearance:cloudy,reasoning:[player carries globe, globe is magical, globe is cloudy]},
+        {someone:player, something:ring, appearance:shiny, reasoning:[player wears ring, ring is magical, ring is shiny]},
+        {someone:alice, something:diadem, appearance:dull, reasoning:[alice wears diadem, diadem is magical, diadem is dull ]},
     ]
 
     pattern updates plot structure
@@ -3174,296 +3165,338 @@ reify.dsl.statements.statement=reify.Syntax()
         __.carries.ring
         __.__.ring etc.
     
-    at the end of the property chain is a payload 
+    at the end of the property chain is a payload called the plot line
+    plotLine??={scenes:[],reality:new reify.Reality(),specificity:specificity,wildcard:wildcard}
 
 
+//`(player [someone] carries lamp [something] or nancy [someone] carries [something]) and ([something] is shiny except [something] is silverware) `
+
+
+
+    expression => term termOperation*  //term as in the terms of an expression, not the terms in an atom
+    term => factor factorOperation*
+    termOperation => termOperator term
+    termOperator => union | unionAll | difference
+    factor => group | pattern  //defect should be atom maybe
+    factorOperation => factorOperator factor
+    factorOperator => intersection | intersectionAll
+    group => leftParen expression rightParen
+    atom => trigger | pattern
+    trigger => when pattern
+    argument => term | wildcard |term wildcard |wildcard term
+    pattern => subject verb directObject prepositionalPhrase*
+    subject =>argument
+    prepositionalPhrase =>preposition target
+    directObject => argument
+    target => argument
+    argument => term? wildcard
+    //DEFECT: implement labels for non-variables
+    //`(player [someone] carries lamp [something] or nancy [someone] carries [something]) and [something] is shiny`
+   // No: union operator: +, difference operator: -, intersection operator: * because code switching bad for cognitive load.
 */
-
-reify.dsl.scene=reify.Syntax()
-
-reify.dsl.scene.pattern=reify.Syntax()
-    .snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrases",reify.dsl.prepositionalPhrases)
+reify.dsl.pattern=reify.Syntax()
+    .snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrase",reify.dsl.prepositionalPhrase)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
+        let specificity=0
+        let wildcard={}
         let gist =interpretation.gist
         let subject = gist.subject
         let directObject=gist.directObject
         let verb=gist.verb.definition
         let predicate=verb.predicate
         
-        let prepositions=(gist.prepositionalPhrases??[]).map(preposition=>preposition.definition.key)
+        let prepositions=(gist.prepositionalPhrase??[]).map(preposition=>preposition.definition.key)
         //do prepositions match predicate?
         if (prepositions.length !== predicate.prepositions.length) return false 
         prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
-      
+        
         let argumentList=[]
 
         if (verb.converse)
         {
-            argumentList.push(reify.net[directObject.definition.key])
-            argumentList.push(reify.net[subject.definition.key])
+            argumentList.push(directObject.definition.key ?? directObject.definition.match)
+            argumentList.push(subject.definition.key ?? directObject.definition.match)
         }
         else
         {
-            argumentList.push(reify.net[subject.definition.key])
-            argumentList.push(reify.net[directObject.definition.key])
+            argumentList.push(subject.definition.key ?? directObject.definition.match)
+            argumentList.push(directObject.definition.key ?? directObject.definition.match)
         }
-        predicate.prepositionalPhrases?.forEach(phrase=>argumentList.push(reify.net[phrase.target.definition.key]))
+        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.definition.key ?? phrase.target.definition.match ))
 
- 
- //       interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,terms:argumentList}
+        //build reify.plot.[predicate.id][tense][polarity][argument1[[argument2[]...[argumentN] data structure
 
-        subject=argumentList.shift()
-        if (subject.startsWith("_")) subject="__"
-
-        plot[subject]??={}
-        plot[subject][predicate.id]??={}
-        let subplot=plot[subject][predicate.id]
-        
-        argumentList.forEach(argument=>
-        {
-            if (argument.startsWith("_") || argument.startsWith("[")) argument="__"
-            subplot[argument]??={}  //defect wild cards and placeholders
-            subplot=subplot[argument]
-        })
-
+        reify.plot[predicate.id]??={}
+        let subplot=reify.plot[predicate.id]
         subplot[verb.tense]??={}
         subplot=subplot[verb.tense]
         subplot[verb.polarity]??={}
         subplot=subplot[verb.polarity]
-        subplot.scenes??=new Set()
-        Interpretation.gist=subplot.scenes
-
-        return true
-
-    }})
-
-    reify.sceneParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.scene.pattern,separator:/^[\s\,]+/ })
-
-
-
-
-
-/*  condition grammar
-    condition => term termOperations*
-    termOperations=> orOperator term
-    term => factor factorOperations*
-    factorOperations=> andOperator factor
-    factor => selection
-    factor=>notOperator factor
-    factor=>leftParen condition rightParen
-*/
-
-
-
-
-
-////selection grammar
-
-/*Selection grammar
-
-
-
-  
-    pattern => subject verb directObject prepositionalPhrases*
-    subject =>argument
-    prepositionalPhrases =>preposition target
-    directObject => argument
-    target => argument
-    placeholder=>/^\[[a-zA-Z]\w*\]/
-    wildcard=>/^_[a-zA-Z]\w*_/
-
-
-
-*/
-
-
-/*reify.dsl.pattern=reify.Syntax().snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrases")
-reify.dsl.pattern.prepositionalPhrases.configure({minimum:0})
-    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.argument)
-
-reify.dsl.selection=reify.Syntax().snip("subject",reify.dsl.termPhrase).snip("predicate")
-    .configure({semantics:interpretation=> //Due to wildcards, each selection may involve multiple facts.  
-    {
-        let gist =interpretation.gist
-        let directObject=gist.predicate.directObject
-        let directObjectTerm=directObject.term.definition.fuzzy?term.definition.match:directObject.term.definition.key
-        let subject=gist.subject
-        let subjectTerm=subject.term.definition.fuzzy?subject.term.definition.match:subject.term.definition.key
-        let predicate=gist.predicate
-        let verb=predicate.verb.definition
-        let argumentList=[]
-        let wildcards={}
-        let specificity=[0,0]
-        let terms={}
-
-        if (verb.converse)
-        {
-            argumentList.push({term:directObjectTerm,adjectivePhrase:directObject.adjectivePhrase}) //filter will eventually include restrictive phrases function
-            argumentList.push({term:subjectTerm,adjectivePhrase:subject.adjectivePhrase})
-            if (subjectTerm.startsWith("_")){wildcards.subjectTerm=1} 
-            if (directObjectTerm.startsWith("_")){wildcards.directObjectTerm=0} 
-            
-        }
-        else
-        {
-            argumentList.push({term:subjectTerm,adjectivePhrase:subject.adjectivePhrase})
-            argumentList.push({term:directObjectTerm,adjectivePhrase:directObject.adjectivePhrase})
-            if (subjectTerm.startsWith("_")){wildcards.subject=0}
-            if (directObjectTerm.startsWith("_")){wildcards.directObject=1}
-        }
-
-        if (!subjectTerm.startsWith("_"))
-        {
-            specificity[0]+=1
-            terms[subjectTerm]=reify.net[subjectTerm]
-        }
-        if (!directObjectTerm.startsWith("_"))
-        {
-            specificity[0]+=1
-            terms[directObjectTerm]=reify.net[directObjectTerm]
-        }
-        specificity[1]+=subject.adjectivePhrase?.specificity[1]??0
-        specificity[1]+=directObject.adjectivePhrase?.specificity[1]??0
         
-        predicate.prepositionalPhrases?.forEach((phrase,index)=>
+        argumentList.forEach((argument,index)=>
         {
-            let target=phrase.target.definition.key
-            argumentList.push({term:target})
-            if (target.startsWith("_")){wildcards[target.slice(1,-1)]=index+2}
-            else
+            if (argument.startsWith("["))
             {
-                specificity[0]+=1
-                terms[target]=reify.net[target]
+                wildcard[argument.slice(1,-1)]=index
+                argument="__"
             }
 
-            specificity[1]+=target.adjectivePhrase?.specificity[1]??0
+            subplot[argument]??={}  //defect wild cards and placeholders
+            subplot=subplot[argument]
         })
-        interpretation.gist={predicate:verb.predicate,tense:verb.tense,polarity:verb.polarity,arguments:argumentList,wildcards:wildcards,specificity:specificity,terms:terms}
-        return true
 
-    }})
-reify.dsl.selection.predicate
-    .snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.termPhrase).snip("prepositionalPhrases")
-    .configure({semantics:interpretation=>
-    {
-        let gist =interpretation.gist
-        let predicate=gist.verb.definition.predicate
-        let prepositions=(gist.prepositionalPhrases??[]).map(preposition=>preposition.definition.key)
-        if (prepositions.length !== predicate.prepositions.length) return false
-        prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
-        return true
-    }})
-    reify.dsl.selection.predicate.prepositionalPhrases
-    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.termPhrase)
-    .configure({minimum:0,maximum:Infinity,greedy:true})
+        
 
-reify.dsl.selections=reify.Syntax()
-    .snip("selection",reify.dsl.selection).snip("period")
-    .configure({maximum:Infinity, semantics:interpretation=>
-    {
-       
-        let selections=interpretation.gist.map(a=>a.selection)
-        let selector=(wildcards,placeholders)=>
+        
+        subplot.plotLine??={scenes:[],reality:new reify.Reality(),specificity:specificity,wildcard:wildcard} //wildcard keys are wild card names. values are argument index
+
+        interpretation.gist.plotLine=subplot.plotLine
+        interpretation.gist.selection=(activation)=> //activation is the reality associated with the pattern
         {
-            const reality=new reify.Reality()
-            selections.forEach(selection=>
+            const selection=[]
+            activation.forEach(fact=>
             {
-                const r=new reify.Reality
-
-                selection.arguments.forEach((argument,index)=>
+                const row={term:{},reasoning:[fact]}
+                for (const [key, index] of Object.entries(wildcard)) 
                 {
-                    const term=argument.term
-                    if (term.startsWith("_"))
-                    {
-
-                        Object.assign(r.wildcards,{[term.slice(1,-1 )]:{index:index,term:true}})
-                    }
-                    else if (term.startsWith("#")) 
-                    {
-                        
-                        if (r.isEmpty) r.add(reify.net[placeholders[term.slice(1)]]._indexes[index])
-                        else r.filter(reify.net[placeholders[term.slice(1)]]._indexes[index])
-
-                    }
-                    else
-                    {
-
-                        //get facts associated with term._index[index] if reality is empty, add otherwise filter
-                        if (r.isEmpty) r.add(reify.net[term]._indexes[index])
-                        else r.filter(reify.net[term]._indexes[index])
-
-                    }
-                })
-                // apply predicate to reality
-                if (selection.predicate instanceof reify.classes.Predicate) selection.predicate._index
-                else if (selection.predicate) wildcards[selection.predicate.slice(1,-1 )]={predicate:true} 
-                // apply adjectives
-                r.forEach(fact=>
-                {
-                    selection.arguments.forEach((argument)=>  
-                    {
-                        if (argument.filter && argument.filter(reify.net[argument.term])) r.subtract(fact)
-                    })
-
-                })
-                reality.add(r)
+                    row.terms[key]=fact.arguments[index]  
+                }
+                selection.push(row)
             })
-
-            //DEFECT what do we do about negative polarity and tense?
-            return reality
-                
-        } 
-        let specificity=selections.reduce((a,b)=>
-        {
-            a[0]+=b.specificity[0]
-            a[1]+=b.specificity[1]
-            return a
-        },[0,0])
-        specificity=specificity.map(s=>s/selections.length) //DEFECt Averaging specificity isn't great.  
-        interpretation.gist={selector:selector,specificity:specificity,
-             terms:selections.reduce((a,b)=>{Object.values(b.terms).forEach(term=>a.add(term)); return a},new Set()),
-             predicates:selections.reduce((a,b)=>a.add(b.predicate), new Set())}         
-           // terms:selections.reduce((a,b)=>Object.assign(a,b.terms),{}),predicates:selections.map((selection)=>selection.predicate)}       
+            return  selection //[{terms,reasoning}]
+        }
+        //interpretation.gist: {plotLine:{scenes:[],reality:new reify.Reality(),specificity:specificity,wildcard:wildcard},selection:()=>{}}
         return true
     }})
-reify.dsl.selections.period.configure({regex:/^\./,lax:true})
+reify.dsl.term=reify.Syntax()
+    .snip("factor").snip("factorOperation")
+    .configure({semantics:interpretation=> //intersection intersectionAll
+    {
+        const gist=interpretation.gist
+        //gist:{plotLine:{scenes:[],reality:new reify.Reality(),specificity:specificity,wildcard:wildcard},selection:()=>{}}
+            
+        gist.selection=()=>
+        {
+            const a=gist.factor.selection() 
+            gist.factorOperation.forEach(operation=>
+            {
+            
+                
+                const b=operation.factor.selection()
+                
+                /*  if a.length is 0 or b.length there is no intersection
+                    
+                */
+                if (a.length===0 || b.length===0) return [] 
+                
+                    /*  if b.length > 0 and b.terms.length is 0 and a has rows, then every thing in a is excluded because there is no correlation to check 
+                        example `player carries[something] and [something] is magical except player is magical`
+                    */
+                    
+                        /*  if b has terms, all shared terms in a and b must match in order for the row in  a to be excluded.
+                            examples:
+                            `player carries [something] except [something] is magical` a.something must match b.something.
+                            `player carries [something] except [something] surface is [quality]` a.something must match b.something.
+                        */
+                    const results=[]   
+                    a.forEach(rowA=>
+                    {
+                        for (const rowB of b)
+                        {
+                            const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
+                            if (commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))//rowB matched rowA
+                            {
+                                results.push(rowA) //Defect needs to be cloned and reasoning added.
+                                if (operation.operator.definition.part==="intersection") break 
 
-reify.selectionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.selections,separator:/^[\s\,]+/ })
-*/
+                            }
+                            
+                        }
+                    })
+                
+            })  
+        }    
+        return true
+    }})
+reify.dsl.expression=reify.Syntax()
+    .snip("term",reify.dsl.term).snip("termOperation")
+    .configure({semantics:interpretation=> //union unionAll difference
+    {
+        const gist=interpretation.gist
+        //gist:{plotLine:{scenes:[],reality:new reify.Reality(),specificity:specificity,wildcard:wildcard},selection:()=>{}}
+        const operations=gist.termOperation  //?.definition.part
+        
+        if (!operations) return true
+        gist.selection=()=>
+        {
+            const a=gist.term.selection()
+            operations.forEach(operation=>
+            {
+                const operator =operation.operator.definition.part
+                if (operator==="unionAllOperator")
+                {
+                    a.concat(operation.term.selection())
+                    return a
+                }
+                if (operator==="differenceOperator") 
+                {
+                    const b=operation.term.selection()
+            
+                    /*  if a.length is 0, everything is already excluded so return a.
+                        if b.length is 0, there is nothing to exclude so return a
+                        
+                    */
+                    if (a.length>0 && b.length>0)
+                    {
+                        /*  if b.length > 0 and b.terms.length is 0 and a has rows, then every thing in a is excluded because there is no correlation to check 
+                            example `player carrying _something_ and _something_ is magical excluding player is magical`
+                        */
+                        if (b.terms.length===0) a=[]
+                        else
+                        {
+                            /*  if b has terms, all shared terms in a and b must match in order for the row in  a to be excluded.
+                                examples:
+                                `player carrying _something_ excluding _something_ is magical` a.something must match b.something.
+                                `player carrying _something_ excluding _something_ surface is _quality_` a.something must match b.something.
+                            */
+                            a.filter(rowA=>
+                            {
+                                for (const rowB of b)
+                                {
+                                    const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
+                                    if (commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))
+                                    {
+                                        return false //rowB matched rowA.  therefore exclude rowA
+                                    }
+                                }
+                                return true
+                            })
+                        }
+                    }
+                    return a
+                }
+                //union operation
+               
+                const b=operation.term.selection()
+                if (a.length===0) return b
+                if (b.length===0) return a
+                //add b rows to a unless all terms from b match all terms a
+                const results=a.slice() //copy a
+                
+                b.forEach (rowB=>
+                {
+                    if (!a.some(rowA=>
+                    {
+                        const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
+                        if ((commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))) return true
+                    })) results.push(rowB)
+                })
+                return results //return union
+               
+            })
+        }
+       
+        return true
 
-/*  condition grammar
-    condition => term termOperations*
-    termOperations=> orOperator term
-    term => factor factorOperations*
-    factorOperations=> andOperator factor
-    factor => selection
-    factor=>notOperator factor
-    factor=>leftParen condition rightParen
-*/
-
-/* reify.dsl.condition=reify.Syntax()
-reify.dsl.condition.snip("term").snip("termOperations")
-reify.dsl.condition.term.snip("factor").snip("factorOperations")
-reify.dsl.condition.termOperations.snip("orOperator").snip("term",reify.dsl.condition.term)
-    .configure({minimum:0,maximum:Infinity})
-reify.dsl.condition.termOperations.orOperator.configure({filter:(definition)=>definition?.part==="orOperator"})
-reify.dsl.condition.term.factorOperations.snip("andOperator").snip("term",reify.dsl.factor)
-    .configure({minimum:0,maximum:Infinity})
-reify.dsl.condition.term.factorOperations.andOperator.configure({filter:(definition)=>definition?.part==="andOperator"})
-reify.dsl.condition.term.factor
-    .snip(0,reify.dsl.selection)
+    }})
+reify.dsl.expression.termOperation   
+    .snip("operator").snip("term",reify.dsl.term)
+    .configure({minimum:0,maximum:Infinity, greedy:true})
+reify.dsl.expression.termOperation.operator
+    .configure({mode:reify.Syntax.apt})
+    .snip(0)
     .snip(1)
     .snip(2)
-reify.dsl.condition.term.factor[1].snip("notOperator").snip("factor",reify.dsl.condition.term.factor)
-reify.dsl.condition.term.factor[1].notOperator.configure({filter:(definition)=>definition?.part==="notOperator"})
-reify.dsl.condition.term.factor[2].snip("leftParen").snip("condition",reify.dsl.condition).snip("rightParen")
-reify.dsl.condition.term.factor[2].leftParen.configure({regex:/^\(/})
-reify.dsl.condition.term.factor[2].rightParen.configure({regex:/^\)/})
 
-reify.conditionParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.condition, boundary:/^[\(\)]/,separator:/^[\s\,]+/ })
+reify.dsl.expression.termOperation.operator[0].configure({filter:(definition)=>definition?.part==="unionAllOperator"})
+reify.dsl.expression.termOperation.operator[1].configure({filter:(definition)=>definition?.part==="unionOperator"})
+reify.dsl.expression.termOperation.operator[2].configure({filter:(definition)=>definition?.part==="differenceOperator"})
 
-*/
+reify.dsl.term.factor
+    .snip(0) // group=(expression)
+    .snip(1,reify.dsl.pattern) // atom  DEFECT:for now it's pattern, but need to implement when triggers
+    .configure({mode:reify.Syntax.apt})
+
+reify.dsl.expression.term.factor[0]
+    .snip("beginGroup").snip("expression",reify.dsl.expression).snip("endGroup")
+    .configure({semantics:interpretation=>
+    {
+        interpretation.gist=interpretation.gist.expression
+        return true
+    }})
+reify.dsl.expression.term.factor[0].beginGroup.configure({filter:(definition)=>definition?.part==="beginGroup"})
+reify.dsl.expression.term.factor[0].endGroup.configure({filter:(definition)=>definition?.part==="beginGroup"})
+
+reify.dsl.term.factorOperation
+    .snip("operator").snip("factor",reify.dsl.term.factor)
+    .configure({minimum:0,maximum:Infinity,greedy:true})
+  
+reify.dsl.term.factorOperation.operator
+    .configure({mode:reify.Syntax.apt})
+    .snip(0)
+    .snip(1)
+
+reify.dsl.term.factorOperation.operator[0].configure({filter:(definition)=>definition?.part==="intersectAllOperator"})
+reify.dsl.term.factorOperation.operator[1].configure({filter:(definition)=>definition?.part==="intersectOperator"})  
+
+
+
+
+
+ //   do we even need converse anymore now that it is full on predicate logic statements? yes, because of directions: is east of/is west of
+    /* player carries ring.  player carries diamond. diamond is shiny
+        
+        `player carries [something] and [something] is shiny.`
+            a=[{something:ring},{something:diamond}]
+            b=[{something:diamond}]
+            intersection=[{something:diamond},reasoning:[diamond is shiny]]
+        
+        `[something] is shiny and player carries [something].`
+            a=[{something:diamond}]
+            b=[{something:ring},{something:diamond}]
+            intersection={something:diamond} reasoning:[diamond is shiny]]
+         
+        `[something] is shiny and player is happy.`
+            a=[{something:diamond}]
+            b=[{}, reasoning:[player is happy]] //no term
+            intersection: [{something:diamond},reasoning:[player is happy]]
+
+    */
+
+
+
+    reify.sceneParser=reify.Parser({ lexicon: reify.glossary, grammar: reify.dsl.expression,separator:/^[\s\,]+/ })
+
+    reify.not=function(factor)
+    {
+        return (factor instanceof reality && factor.size===0 ) || !factor
+    }
+    reify.or=function( ...operands) 
+    {
+        return operands.some(operand=>(operand instanceof reality && operand.size>0 ) || operand)
+    }
+    reify.sequence=function(plotLines) //plotLines ={scenes:[scene],reality:reality of matches facts,specificity }
+    {
+        let sequence=new Set()
+        
+        plotLines.map(plotLine=>
+        {
+            for(scene of plotLine.scenes) //plotLines already sorted by specificity.
+            {
+                if (scene.condition()===true)
+                {
+                    sequence.add(scene)
+                    break
+                }
+
+            }
+        })
+
+
+    }
+    
+
 
 
 

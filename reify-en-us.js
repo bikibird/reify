@@ -2,11 +2,15 @@
 // #region glossary
 reify.glossary
 	//.register("the", "a", "an","some").as({ part: "article" })
-    .register("that").as({ part: "relativizer" })
-    .register("or").as({ part: "orOperator" })
-    .register("and").as({ part: "andOperator" })
-    .register("not").as({ part: "notOperator" })
 
+    .register("or").as({ part: "unionOperator" })
+    .register("or all").as({ part: "unionAllOperator" })
+    .register("and").as({ part: "intersectionOperator" })
+    .register("and all").as({ part: "intersectionAllOperator" })
+    .register("except").as({ part: "differenceOperator" })
+    .register("(").as({part:"beginGroup"})
+    .register(")").as({part:"endGroup"})
+    
 /*reify.defineVerb=function defineVerb(...verbs) //defineVerb("connect on through","connect to") -- "connect to" is verb + particle
 	{
 		if (verbs.length>0)
