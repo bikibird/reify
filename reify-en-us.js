@@ -3,6 +3,9 @@
 reify.glossary
 	//.register("the", "a", "an","some").as({ part: "article" })
 
+    .register("when").as({ key:"when", part: "trigger" })
+    .register("whenever").as({key:"whenever", part: "trigger" })
+    .register("while").as({key:"while", part: "trigger" })
     .register("or").as({ part: "unionOperator" })
     .register("or all").as({ part: "unionAllOperator" })
     .register("and").as({ part: "intersectionOperator" })
