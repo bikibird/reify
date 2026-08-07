@@ -2478,6 +2478,11 @@ reify.Reality=class Reality
         })
         return this
     }
+    clear()
+    {
+        this.set.clear()
+        return this
+    }
 
     filter(...realities) //intersection of two realities sets
     {
@@ -2543,7 +2548,7 @@ reify.Reality=class Reality
     }
 }
 
-//reify.net={}  //semantic network, where terms and facts live. DEFECT:Obsolete?
+
 reify.plot={_term:{},_fact:{}}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
 reify.classes={}  //Classes that users might want to extend
 reify.proxies={}
@@ -2651,7 +2656,7 @@ reify.classes.fact= class Fact
             {
                 history[reify.turn]={clock:reify.clock,tense:fact.tense,mood:fact.mood,polarity:fact.polarity }
 
-                //DEFECT delete old fact from plot.
+               
                 reify._update(fact) //delete old fact
                 fact.tense=statement.tense
                 fact.mood=statement.mood
@@ -2828,6 +2833,12 @@ reify.classes.Predicate=class Predicate
 }
 reify.classes.Scene=class Scene
 {
+    static recency = 0
+    static updateRecency()
+    {
+        this.recency+=1
+        return this.recency
+    }
     constructor(literals, ...expressions)
     {
         
@@ -2846,16 +2857,20 @@ reify.classes.Scene=class Scene
             {
                 throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
             }
-            else  //add scene to terms
+            else  //add scene to subplots
             {
                 let gist=interpretations[0].gist
-                console.log(gist)
                 Object.defineProperties(this,
                 {   
-                    selector:{value:gist.selector,enumerable:false,writable:false},
+                    toString:()=>source,
+                    select:{value:gist.selector,enumerable:false,writable:false},
                     storylines:{value:[],enumerable:false,writable:true},
-                    plot:{value:(reality)=>true,enumerable:false,writable:true},                 
-                    specificity:{value:gist.specificity,enumerable:false,writable:false}
+                    plot:{value:()=>source,enumerable:false,writable:true},
+                    recency:{value:reify.classes.Scene.updateRecency(),enumerable:false,writable:true}, 
+                    specificity:{value:gist.specificity,enumerable:false,writable:false},
+                    mise:{value:[],enumerable:false,writable:true},
+                    
+
                 })
                 gist.subplots.forEach(subplot=>subplot.scenes.push(this))
                 
@@ -2913,17 +2928,16 @@ reify.dsl={}
 
 
 
-reify.dsl.element.configure({filter:(definition)=>definition?.part==="term"})
-reify.dsl.wildcard.configure({regex:/^\[[a-zA-Z]\w*\]/})
-reify.dsl.argument=reify.Syntax().configure({mode:reify.Syntax.apt})
+reify.dsl.element=reify.Syntax().configure({filter:(definition)=>definition?.part==="term"})
+reify.dsl.wildcard=reify.Syntax().configure({regex:/^\[[a-zA-Z]\w*\]/})
+reify.dsl.argument=reify.Syntax()
     .snip(0)
     .snip(1)   
     .snip(2)
-    .snip(3)
-reify.dsl.argument[0].snip("wildcard",reify.dsl.element).snip("element",reify.dsl.wildcard)
+    .configure({mode:reify.Syntax.apt})
+reify.dsl.argument[0].snip("wildcard",reify.dsl.wildcard)
 reify.dsl.argument[1].snip("element",reify.dsl.element).snip("wildcard",reify.dsl.wildcard)
-reify.dsl.argument[2].snip("wildcard",reify.dsl.element)
-reify.dsl.argument[3].snip("element",reify.dsl.wildcard)
+reify.dsl.argument[2].snip("element",reify.dsl.element)
 
 
 reify.dsl.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
@@ -3028,12 +3042,12 @@ reify.dsl.atom=reify.Syntax()
         let gist =interpretation.gist
         const trigger=gist.trigger.definition.key
         const pattern=gist.pattern
-        const subject = gist.pattern.subject
-        const directObject=gist.directObject
-        const verb=gist.verb.definition
+        const subject = pattern.subject
+        const directObject=pattern.directObject
+        const verb=pattern.verb.definition
         const predicate=verb.predicate
         
-        let prepositions=(pattern.prepositionalPhrase??[]).map(preposition=>preposition.definition.key)
+        let prepositions=(pattern.prepositionalPhrase ?? []).map(preposition=>preposition.definition.key)
         //do prepositions match predicate?
         if (prepositions.length !== predicate.prepositions.length) return false 
         prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
@@ -3042,25 +3056,42 @@ reify.dsl.atom=reify.Syntax()
 
         if (verb.converse)
         {
-            argumentList.push(directObject.definition.key ?? directObject.definition.match)
-            argumentList.push(subject.definition.key ?? directObject.definition.match)
+            argumentList.push(directObject.element?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.element?.definition.key ?? directObject.wildcard.definition.match)
         }
         else
         {
-            argumentList.push(subject.definition.key ?? directObject.definition.match)
-            argumentList.push(directObject.definition.key ?? directObject.definition.match)
+            argumentList.push(subject.element?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(directObject.element?.definition.key ?? directObject.wildcard.definition.match)
         }
-        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.definition.key ?? phrase.target.definition.match ))
+        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.element.definition.key ?? phrase.target.wildcard.definition.match ))
 
-        //build reify.plot.[predicate.id][tense][polarity][argument1[[argument2[]...[argumentN] data structure
+        //for when and while build reify.plot.[predicate.id][tense][polarity][argument1[[argument2[]...[argumentN] data structure
+        //for when add a when node at the end of the data structure. Now populates with facts for both when node and parent of when.
+        //for whenever build reify.plot.whenever.[predicate.id][tense][polarity][argument1[[argument2[]...[argumentN] data structure instead
+        //for while do not do anything additional.
+        let whenever=trigger==="whenever",when=trigger==="when",subplot=reify.plot,wheneverPlot
 
-        reify.plot[predicate.id]??={}
-        let subplot=reify.plot[predicate.id]
+        
+    
+        subplot[predicate.id]??={}
+        subplot=subplot[predicate.id]
         subplot[verb.tense]??={}
         subplot=subplot[verb.tense]
         subplot[verb.polarity]??={}
         subplot=subplot[verb.polarity]
-        
+
+        if (whenever)
+        {
+            wheneverPlot=wheneverPlot.whenever??={}
+            wheneverPlot[predicate.id]??={}
+            wheneverPlot=wheneverPlot[predicate.id]
+            wheneverPlot[verb.tense]??={}
+            wheneverPlot=wheneverPlot[verb.tense]
+            wheneverPlot[verb.polarity]??={}
+            wheneverPlot=wheneverPlot[verb.polarity]
+        }
+
         argumentList.forEach((argument,index)=>
         {
             if (argument.startsWith("["))
@@ -3073,10 +3104,13 @@ reify.dsl.atom=reify.Syntax()
                 wildcard[argument]=index
                 specificity+=1
             }
-
             subplot[argument]??={} 
             subplot=subplot[argument]
-
+            if (whenever)
+            {
+                wheneverPlot[argument]??={} 
+                wheneverPlot=wheneverPlot[argument]
+            }
         })
 /*
 `when player carries ring` translates to: 
@@ -3087,22 +3121,12 @@ while scenes do not need to be captured because they have no trigger.
 while reality is the main reality 
 */
         subplot.reality??=new reify.Reality()  
-        if (trigger==="when")
+        if (whenever) wheneverPlot??={reality:subplot.reality,scenes:[]}
+        if (when)
         {
-            subplot.when??={scenes:[], reality:new Reality()}
+            subplot.when??={scenes:[], reality:new reify.Reality()}
             subplot=subplot.when
         }
-        else if (trigger==="whenever")
-        {
-            subplot.whenever??={scenes:[], reality:subplot.reality}
-            subplot=subplot.whenever
-        }
-        else if (trigger==="while")
-        {
-            subplot.while??={scenes:[], reality:subplot.reality}
-            subplot=subplot.while
-        }
-        
         interpretation.gist={subplots:[subplot],specificity:specificity}
         interpretation.gist.selector=()=> //activation is the reality associated with the pattern
         {
@@ -3112,11 +3136,11 @@ while reality is the main reality
                 const row={term:{},reasoning:[fact]}
                 for (const [key, index] of Object.entries(wildcard)) 
                 {
-                    row.terms[key]=fact.arguments[index]  
+                    row.term[key]=fact.terms[index]  
                 }
                 selection.push(row)
             })
-            return  selection //[{terms,reasoning}]
+            return  selection //[{term,reasoning}]
         }
         //interpretation.gist==={subplots[subplot],specificity:specificity,selector:selector}
         return true
@@ -3155,21 +3179,13 @@ reify.dsl.term=reify.Syntax()
                     
                     //  if a.length is 0 or b.length there is no intersection
                     if (a.length===0 || b.length===0) return [] 
-                    
-                    /*  if b.length > 0 and b.terms.length is 0 and a has rows, then every thing in a is excluded because there is no correlation to check 
-                            example `player carries[something] and [something] is magical except player is magical`
-                        if b has terms, all shared terms in a and b must match in order for the row in  a to be excluded.
-                            examples:
-                            `player carries [something] except [something] is magical` a.something must match b.something.
-                            `player carries [something] except [something] surface is [quality]` a.something must match b.something.
-                    */
                     const results=[]   
                     a.forEach(rowA=>
                     {
                         for (const rowB of b)
                         {
-                            const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
-                            if (commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))//rowB matched rowA
+                            const commonKeys = Object.keys(rowA.term).filter(key => Object.hasown(rowB.term,key))
+                            if (commonKeys.every((key)=>rowA.term[key]===rowB.term[key]))//rowB matched rowA
                             {
                                 results.push(rowA) //Defect needs to be cloned and reasoning added.
                                 if (operation.operator.definition.part==="intersection") break 
@@ -3222,7 +3238,8 @@ reify.dsl.expression=reify.Syntax()
                             /*  if b.length > 0 and b.terms.length is 0 and a has rows, then every thing in a is excluded because there is no correlation to check 
                                 example `player carrying _something_ and _something_ is magical excluding player is magical`
                             */
-                            if (b.terms.length===0) a=[]
+                            
+                            if (Object.keys(b.term).length===0) a=[]
                             else
                             {
                                 /*  if b has terms, all shared terms in a and b must match in order for the row in  a to be excluded.
@@ -3234,8 +3251,8 @@ reify.dsl.expression=reify.Syntax()
                                 {
                                     for (const rowB of b)
                                     {
-                                        const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
-                                        if (commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))
+                                        const commonKeys = Object.keys(rowA.term).filter(key => Object.hasown(rowB.term,key))
+                                        if (commonKeys.every((key)=>rowA.term[key]===rowB.term[key]))
                                         {
                                             return false //rowB matched rowA.  therefore exclude rowA
                                         }
@@ -3258,8 +3275,8 @@ reify.dsl.expression=reify.Syntax()
                     {
                         if (!a.some(rowA=>
                         {
-                            const commonKeys = Object.keys(rowA.terms).filter(key => Object.hasown(rowB.terms,key))
-                            if ((commonKeys.every((key)=>rowA.terms[key]===rowB.terms[key]))) return true
+                            const commonKeys = Object.keys(rowA.term).filter(key => Object.hasown(rowB.term,key))
+                            if ((commonKeys.every((key)=>rowA.term[key]===rowB.term[key]))) return true
                         })) results.push(rowB)
                     })
                     return results //return union
@@ -3358,11 +3375,13 @@ reify.now=function(literals, ...expressions)
             }
             else
             { 
-                let reality=reify.Reality()
+                let reality=new reify.Reality()
                 interpretations[0].gist.forEach(statement=> reality.add(new reify.classes.fact(statement)))
                 reality.forEach(fact=>
                 {
-                    const when = reify._update(fact,true)
+                    console.log(reify._update(fact,true)())
+                    
+
                 
                 })
             }
@@ -3401,7 +3420,7 @@ reify._update=function(fact,assert)
     //when pattern
     //whenever pattern
     //while pattern
-    //Defect: probably need to return scenes...
+
     let subtree=reify.plot
     const path=[fact.predicate.id].concat(fact.tense).concat(fact.polarity).concat(fact.terms.map(term=>term.id))
     const when=[]
@@ -3416,7 +3435,7 @@ reify._update=function(fact,assert)
                 {
                     subtree.when.reality.clear()
                     subtree.when.reality.add(fact)
-                    when.concat(subtree.when.scenes)
+                    when.push(...subtree.when.scenes)
                 }
 
             }
@@ -3430,10 +3449,22 @@ reify._update=function(fact,assert)
 
     traverse(path,subtree,true)
 
-    
-    const subplot= function subplot()
+    when.sort((a,b)=> //sort descending order by specificity with ties broken by recency.
     {
-        if (when.length>0) return when.shift()(subplot)
+        if (a.specificity > b.specificity) return true
+        if (a.specificity < b.specificity) return false
+        if (a.recency > b.recency) return true
+        return false
+    })
+    
+    const subplot = function subplot()
+    {
+        if (when.length>0)
+        {
+            const scene=when.shift()
+            const mise=scene.mise=scene.select()
+            if (mise.length >0) return scene.plot(subplot)
+        }
     }
     return subplot
     
