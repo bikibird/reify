@@ -102,3 +102,16 @@ By convention, the select property of the definition is a function that returns 
 //select() returns a cord containg a ply that points to the cloak knot.
 .register("cloak").as({part: "noun",  select:$.thing.cloak.cord)
 
+
+Jekyll command:
+
+cd parent_folder
+
+jekyll new sitename  (this creates the baseline files)
+
+cd sitename
+
+jekyll serve (this builds the site)
+
+
+

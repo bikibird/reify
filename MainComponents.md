@@ -1,6 +1,6 @@
 1. CFG Parser  (Done)
 2. Templating system (Done)
-3. Semantic network
+3. Semantic network/rules engine
 5. Event Generation(User input and Episodes)
 5. Event Handling (scenes)
 6. world.js and plot.js (starter pack)
@@ -13,41 +13,88 @@
 https://en.wikipedia.org/wiki/Semantic_network
 
 
-reify.net represents the story world by storing facts about it.  A fact relates nouns to each other using a predicate. Nouns and predicates are also stored separately from the fact for ease of retrieval and ease of reifying by id.
+Reify.js is a JavaScript is a library for writing interactive fiction (also known as text adventures).  With Reify, you describe the story world with facts and write scenes that respond whenever the facts change.
 
-Nouns must be defined separately prior to facts:
+Facts describe how two or more story elements relates relate to each other. Here are some facts which describe the story world in the Cloak of Darkness:
+
+```javaScript
+reify.facts`player wears cloak.  foyer is north of bar. foyer is east of cloakroom.  hook is attached to cloakroom.`
+```
+
+
+Facts may look a bit like English, but they are actually structure code. Each fact is composed of two or more terms and a predicate.  Terms are typically nouns, but adjectives may be terms too.  The predicate defines the relationship between the terms.  In the fact **foyer is north of bar**, **foyer** and **bar** are terms and the phrase **is north of** is the predicate describing how foyer and bar relate to each other. When there are more than two terms, the additional terms are separated by prepositions and the predicate is composed of the verb phrase and prepositions.  For example, **Jamal gave ring to Denise** has three terms: Jamal, ring, and Denise. The predicate is for this fact is **give to**.  
+
+Scenes make up the plot of the story.  In interactive fiction scenes are triggered in response to changes in facts.  
+
+reify.scene`when [someone] wears ring and while [someone] is weak.`
+    .storyline`[someone] has become enthralled by the ring's power. Beware!`
+    .action(()=>
+    {
+        this.unfold().say() //default wearing response
+
+        this.storylines[0].say()
+        
+        this.now`[someone] is evil.`
+    })
+Basic pattern: trigger term | placeholder verb term | placeholder [preposition term | placeholder...]
+fact pattern triggers: 
+Any pattern without a temporal modifier is triggered by facts created by reify.now.
+Any pattern using progressive form is triggered every turn. 
+Any pattern using whenever creates a condition that does not trigger.
+reify.scene`when [someone] wears ring and while [someone] is weak.`
+    .storyline`triggered from a now`
+reify.scene`whenever [someone] wears ring and while [someone] is weak.`
+
+    .storyline`Every turn where someone is wearing the `
+
+reify.term`suitcase`
+.capacity(0)
+
+reify.suitcase.episode`capacity`
+.later`suitcase is full`
+.when(capacity=>capacity===10)
+.later`suitcase is not full`
+.when(capacity => capacity <10)
+
+
+
+
+
+
+
+Terms must be defined separately prior to facts:
 ```javascript
 reify
-    .noun(id).name().aka()._().assign(id of noun already defined to import properties from that noun).property1().property2().etc
-    .noun(id of next noun).etc
+    .term(id).name().aka()._().assign(id of term already defined to import properties from that term).property1().property2().etc
+    .term(id of next term).etc
 
-// Name and aliases are added to lexicon as nouns. Names must be unique, but aliases may dupe.
+// Name and aliases are added to lexicon as terms. Names must be unique, but aliases may dupe.
 // Yarn means narrative and/or description
 
-reify.noun`place`
+reify.term`place`
 .place(true)
 
-.noun`room`
+.term`room`
 	.kind`place`
 	.room(true)
 
-.noun`portal`
+.term`portal`
 	.portal(true)
 
-.noun`thing`
+.term`thing`
 	.thing(true)
 	.portable(true)
 
-.noun`foyer` 
-// the underscore property is referred to as the "yarn" and functions as the noun's description. It is an instance of a phrase/template
+.term`foyer` 
+// the underscore property is referred to as the "yarn" and functions as the term's description. It is an instance of a phrase/template
 	._`This is the description`
 	.aka`alias1`.aka`alias2` \\alternate names
 	.kind`room`
 	.lighting(.8) //lighting is a fuzzy logic value?
-.noun`bar`
+.term`bar`
 	.kind`room`  //adds place 
 	.lighting(.2)
-.noun`oak_door`
+.term`oak_door`
 	.kind`portal`
 ```
 A fact's predicate is an instance of reify.Predicate. A predicate is identified by a verb and one or more prepositions.  Example: player carries ring.   Predicates have tenses: player carried ring. Predicates should not be confused with verbs.  Verbs are commands given by the player, which are translating into facts: player tries going north.
@@ -67,10 +114,25 @@ reify.predicate`verb_stem prep1 prep2 etc` // `connect through` `carry` `give to
 	.select() //for virtual predicates  .select`player has ring.` selects player carries or wears ring
 	.check() //for virtual predicates .check`player has ring.` checks player carries or wears ring
 ```
+DSL
+
+Declaring facts:
+
+    statements=>(statement period)+  //create one or more facts
+    statement=>subject verb directObject prepositionalPhrases*
+    subject=>argument 
+    prepositionalPhrases=>preposition target
+    directObject=>argument
+    target=>argument
+
+
+
+
+
 
 Facts:
 
-A fact relates nouns to each other through a predicate.  Fact are created using 
+A fact relates terms to each other through a predicate.  Fact are created using 
 
 reify.facts`player carries ring. player wears cape. library contains book.  desk supports pencil.`
 
@@ -80,16 +142,14 @@ reify.facts`The player carries a ring. The player wears a cape. The library cont
 
 The semantic network is queried using a select statement, which returns a set of Facts called a reality. Use _placeholder_ to specify missing information.
 ```javaScript
-reify.select`_person_ carries ring.` 
-reify.select`talkative _person_ carries shiny ring.` //adjectives restrict
-reify .select`_person_,a person, who carries ring and who eats pizza that is cold.` // restrictive clauses begin with who or that.
+reify.select`[person] carries ring.` 
 ```
 
 
 
 
 `
-"that" and "who" indicates a restrictive clause on the prior noun.
+"that" and "who" indicates a restrictive clause on the prior term.
 select`a person, _stranger_, who lives in the apartment and who owns a pet _animal_ (that runs free or that is carried by alice) and that lost a collar.`
 
 
@@ -99,54 +159,52 @@ Adjectives may be defined to facilitate writing select and check statements.
 Adjectives may be defined as enums if more than one adjective is listed or Booleans if only one is given.  
 For Booleans an opposite adjective may optionally be provided for the false condition. 
 if only one adjective is listed and a value is provided it creates a value adjective.  Value may be number, function, or string
-if only one adjective is listed and a premise is provided, the noun 
-if the argument for describes is a string is assumed to be the property of the noun. It is equivalent to using noun=>noun.property===adjective_value
+if only one adjective is listed and a premise is provided, the term 
+if the argument for describes is a string is assumed to be the property of the term. It is equivalent to using term=>term.property===adjective_value
 
 
 ```javaScript
 reify
-//adds adjectives to lexicon locked:{describes:noun=>noun.security===0}, unlocked:{describes:noun=>noun.security===1}
+//adds adjectives to lexicon locked:{describes:term=>term.security===0}, unlocked:{describes:term=>term.security===1}
     .adjective`locked,unlocked`.describes`security` 
     .adjective`pass,fail`.describes`exam`           
     .adjective`dark,dim,bright`.describes`lighting` 
-    .adjective`locked`.opposite`unlocked`.describes`security` //add adjective to lexicon locked:{describes:noun=>noun.security===true}, unlocked:{describes:noun=>noun.security===false}
-    .adjective`tall`.describes(noun=>noun.height>70) // tall:nounList=>nounList.forEach(noun=>noun.height>70)
-    .adjective`very tall`.describes(noun=>noun.height>74) // very_tall:
+    .adjective`locked`.opposite`unlocked`.describes`security` //add adjective to lexicon locked:{describes:term=>term.security===true}, unlocked:{describes:term=>term.security===false}
+    .adjective`tall`.describes(term=>term.height>70) // tall:termList=>termList.forEach(term=>term.height>70)
+    .adjective`very tall`.describes(term=>term.height>74) // very_tall:
     
     
     
-    //adjectives that compare two or more nouns (taller or tallest) provide a comparison function, which is used to sort a noun list and return the first noun.
+    //adjectives that compare two or more terms (taller or tallest) provide a comparison function, which is used to sort a term list and return the first term.
     //compares() creates the er and est forms of the adjective. 
-    .adjective`tall`.describes(noun=>noun.height>70).compares((a,b)=>a.height>b.height)
+    .adjective`tall`.describes(term=>term.height>70).compares((a,b)=>a.height>b.height)
 
     
     //participial adjectives are defined as part of the predicate definition.
     
-    //a noun intended as a kind will often have attributes associated with it that need to be defined as adjectives.  
+    //a term intended as a kind will often have attributes associated with it that need to be defined as adjectives.  
 
     // to
 
 
-.check`room contains tall female _NPC_.`
+.check`room contains [NPC] and [NPC] is female and [NPC] is tall.`
 .check`player is tall`
-.check`NPC who is tall has ring`
-.check`tall NPC has ring`
-
 .select`shiny ring`
-.reify`the ring is dull.`
+.select`chair surface is green` //predicate surface_is
+//has is a predicate. Surface is a term. surface is an aspect of chair.  chair functions as an appositive
 
 
 //default premise for enums and booleans:
 
-noun=>noun.property===adjective.value
-noun=>noun.security===adjective.locked
-noun=>noun.lighting===adjective.dim
+term=>term.property===adjective.value
+term=>term.security===adjective.locked
+term=>term.lighting===adjective.dim
 
 
 
 
 
-//reify for noun properties
+//reify for term properties
 reify`A padlock secures the strongbox. `
 reify`A key turns the padlock.
 reify`The padlock is locked.`  //reify.net.padlock.lock===true
@@ -160,7 +218,7 @@ reify`The strongbox contains treasure.`
 reify.net.treasure.worth=100
 reify.net.player.temperature=98.6
 
-//adjective locked used before noun strongbox
+//adjective locked used before term strongbox
 //check returns true or false
 if (check`locked strongbox contains ring and player does not have key.`)
 {
@@ -190,7 +248,7 @@ reify.reify`A twisty_passage connects bar to foyer on east, but the twist_passag
 .reify`The ring is dull.`
 
 
-//use adjectives as noun list modifiers:
+//use adjectives as term list modifiers:
 
 reify.reify`the magic portal connects opulent _rooms_ to the bar.`  //the magic portal only connects rooms that are opulent
 
@@ -201,10 +259,10 @@ CORRECT: .reify`player carries the dull ring.`
 Correct: .reify`ring that player carries is shiny` Changes ring to shiny if the player is carrying it.
 
 
-.noun`fountain`
+.term`fountain`
 	.place(true) //not a room, open air
 
-.noun`niche`
+.term`niche`
 	.place(true)
 
 ```
@@ -212,7 +270,7 @@ Correct: .reify`ring that player carries is shiny` Changes ring to shiny if the 
 
 
 
-nouns are wrapped in a proxy that exposes the episode method: noun.episode("quantity").situation((quantity)=>true).implies(()=>)
+terms are wrapped in a proxy that exposes the episode method: term.episode("quantity").situation((quantity)=>true).implies(()=>)
 predicates are wrapped in a proxy ????? To what purpose
 
 A fact is an instance of reify.Fact and has members {id,subject, verb:directObject,preposition1:indirectObject, prep2:etc, _start, _end, _history}.
@@ -262,7 +320,7 @@ bar is east of magic portal.  magic portal
 //twisty passage one-way connects bar to foyer on north. twisty passage one-way connects foyer to bar on east.
 
 //predicate verbs are stored in glossary in present (eat, eats) and past (ate eaten) forms.
-//In DSL, no attempt is made to match the number and/or person of the noun.  player carry and player carries are both valid for present tense.  Similarly, took and taken are treated the same.  Everything is assumed simple present or past tense unless an auxiliary is present.
+//In DSL, no attempt is made to match the number and/or person of the term.  player carry and player carries are both valid for present tense.  Similarly, took and taken are treated the same.  Everything is assumed simple present or past tense unless an auxiliary is present.
 
 is/are: present passive form.  example: is carried_by
 was: past passive form.  example:  was carried_by
@@ -279,10 +337,10 @@ had not/hadn't had not been/hadn't
 Selection extends Set.  And contains the wildcards 
 
 
-select`the _room_ occupied by player` //noun phrase (article+noun wildcard) + participial phrase  Selection.add({_room_})
-select`tall _npc_` //noun phrase (adjective+noun wild card)  Selection.add({_npc_})
-select`carried ring` //noun phrase (participle + noun wildcard) Selection.add({_npc_})
-select`_npc_ that carries ring` //noun phrase + restrictive clause selection.add(_npc_)
+select`the _room_ occupied by player` //term phrase (article+term wildcard) + participial phrase  Selection.add({_room_})
+select`tall _npc_` //term phrase (adjective+term wild card)  Selection.add({_npc_})
+select`carried ring` //term phrase (participle + term wildcard) Selection.add({_npc_})
+select`_npc_ that carries ring` //term phrase + restrictive clause selection.add(_npc_)
 select`_npc_ carries ring`//full fact  selection.add(_npc)
 select`_npc_ wears ring`.now`_npc_ is invisible`
 
@@ -352,7 +410,7 @@ select`fact. fact. fact...` //union of facts
 
 participles may function as adjectives `the shattered vase` .passive`carry` should add an adjective 
 
-participial phrases  are restrictive phrases `the ring carried by the player eaten by the dragon is toxic.`  They follow after the noun they are restricting
+participial phrases  are restrictive phrases `the ring carried by the player eaten by the dragon is toxic.`  They follow after the term they are restricting
 
 
 
@@ -393,17 +451,17 @@ check`player had eaten cake.` //perfect tense.  player ate cake at some point, b
 Present 
 Perfect tense is specifically the past perfect tense and refers to a fact that is currently expired, but had been reified at one time.
 
-A fact's noun is an array of POJOs. noun[0] is subject.  noun[1] is direct object, noun[2] is indirect object, etc.  Any arity is allowed and is dictated by the predicate. 
+A fact's term is an array of POJOs. term[0] is subject.  term[1] is direct object, term[2] is indirect object, etc.  Any arity is allowed and is dictated by the predicate. 
 
-Facts are also nouns in their own right and may be related to other nouns.
+Facts are also terms in their own right and may be related to other terms.
 
-The properties of nouns are treated like predicates.
+The properties of terms are treated like predicates.
 
 reify.reify`The bar's lighting is dim.` //"'s", "'", and "is" are syntactically meaningless and present just for readability. like all predicates, the property name must be defined in the lexicon.
 
-nouns are wrapped in proxies which can trigger an episode when a property changes.
+terms are wrapped in proxies which can trigger an episode when a property changes.
 
-noun.upon("health").episode((noun)=>{if (noun.health <2 and noun.heath>0) { return `player faints.`}})
+term.upon("health").episode((term)=>{if (term.health <2 and term.heath>0) { return `player faints.`}})
 
 reify.reify adds facts to the net.
 
@@ -428,16 +486,16 @@ check`
 
 reify`foyer exits north to bar.` creates:
 
-reify.net["foyer exits north to bar"]={predicate:exit_to noun[foyer,north,bar]}
+reify.net["foyer exits north to bar"]={predicate:exit_to term[foyer,north,bar]}
 
 The creation of a fact may imply other facts. For example exits north implies the opposite exit south relation and is place.    The implied facts are created by triggering the explicit fact's storyline in the plot.  
 
 
 reify`foyer exits north to bar.` also creates:
 
-reify.net["bar exits south to foyer"]={predicate:exit_to noun[bar,south,foyer]}
-reify.net["foyer is place"]={predicate:is, noun[foyer,place]}
-reify.net["bar is place"]={predicate:is, noun[bar,place]}
+reify.net["bar exits south to foyer"]={predicate:exit_to term[bar,south,foyer]}
+reify.net["foyer is place"]={predicate:is, term[foyer,place]}
+reify.net["bar is place"]={predicate:is, term[bar,place]}
 
 because of storyline`_room1_ exits _direction_ to _room2_`
 
@@ -448,12 +506,12 @@ reify.net["foyer exits north to bar explicitly one-way."]
 Also creates:
 
 reify.net["foyer exits north to bar"]
-reify.net["bar is place"]={predicate:is, noun[bar,place]}
+reify.net["bar is place"]={predicate:is, term[bar,place]}
 
 
 
 
-Changing the property of a noun with reify triggers matching storylines.
+Changing the property of a term with reify triggers matching storylines.
 
 reify`bar lighting is dim`  //look up dim in the lexicon. If not present, use text "dim"
 reify`bar lighting is ${5}`
@@ -469,32 +527,32 @@ reify.storyline`bar lighting ${()=>5}.`
 
 reify`kathy knows (john proposed_to mary).` creates:
 
-reify.net["kathy knows (john proposed_to mary)"]={predicate:knows noun[kathy,{predicate:proposed_to,noun:[john,mary]}]} 
+reify.net["kathy knows (john proposed_to mary)"]={predicate:knows term[kathy,{predicate:proposed_to,term:[john,mary]}]} 
 
-A fact is a predicate + n nouns.
+A fact is a predicate + n terms.
 A reality is a set of facts
 
-reify.net contains nouns and fact stored as key/value  pairs.  It mainly exists so that facts and nouns can be retrieved when they are exactly know. 
+reify.net contains terms and fact stored as key/value  pairs.  It mainly exists so that facts and terms can be retrieved when they are exactly know. 
 
-Each predicate and noun has an _index property.
+Each predicate and term has an _index property.
 
 The predicate index is a reality of facts in which the predicate appears.
 
-The noun index is an array of realities corresponding to the noun's position in th the facts. 
+The term index is an array of realities corresponding to the term's position in th the facts. 
 
 The purpose of the indexes is to allow quick retrieval of facts when incomplete information is known.
 
 fact 'player carries ring` is indexed as follows
 
-player._index[0]=reality of facts containing player in any noun position 0, the subject 
-ring._index[1] =reality of facts containing ring in any noun position 1, the direct object 
+player._index[0]=reality of facts containing player in any term position 0, the subject 
+ring._index[1] =reality of facts containing ring in any term position 1, the direct object 
 carry._index=reality of facts containing predicate carry
 
 fact player_gave_ring_to_nancy is indexed as follows
 
-player._index[0]=reality of facts containing player in any noun position 0, the subject 
-ring._index[1]=reality of facts containing ring in any noun position 1, the direct object
-nancy._index[2]=reality of facts containing player in any noun position 2, the indirect object 
+player._index[0]=reality of facts containing player in any term position 0, the subject 
+ring._index[1]=reality of facts containing ring in any term position 1, the direct object
+nancy._index[2]=reality of facts containing player in any term position 2, the indirect object 
 give_to._index=reality of facts containing predicate carry
 
 reify.select`player carries ___` //returns player_carry_ring    
@@ -516,9 +574,9 @@ reify.select`player ___ ring` //returns player_carry_ring and player_give_ring_t
 
 
 
-Each noun, predicate, and fact are stored in reify.net as a key/value pair.  
+Each term, predicate, and fact are stored in reify.net as a key/value pair.  
 
-_index[0...n] //zero is predicate, 1 is noun1, 2 is noun2, etc.
+_index[0...n] //zero is predicate, 1 is term1, 2 is term2, etc.
 
 _index[0].entity.facts
 _index[0].entity._index[0...n].another_entity.facts
@@ -532,11 +590,11 @@ _index[1].foyer._index[2].north.facts
 
 Searching:
 
-Divide search string into wildcards, predicate and noun strings of each fact, recursively for compound facts.
+Divide search string into wildcards, predicate and term strings of each fact, recursively for compound facts.
 
-Retrieve predicate and nouns from reify.net.
+Retrieve predicate and terms from reify.net.
 
-retrieve facts for first noun from reverse index checking for noun position match and predicate match. Check remaining nouns against noun position of fact.  Put passing facts into a set to weed out dupes.  
+retrieve facts for first term from reverse index checking for term position match and predicate match. Check remaining terms against term position of fact.  Put passing facts into a set to weed out dupes.  
 
 
 
@@ -550,7 +608,7 @@ reify.select`box contains _what_?` // returns reality of facts{ fact members,_wh
 select`_what_ contains _something_`//returns  reality of facts. each fact has _what_ and _something_ property
 suspects=reify.select`_who_ ate the cake?` //returns reality of facts each fact has a _who_ property
 
-When select query only contains a subject and its restrictive clauses, an array of nouns are returned
+When select query only contains a subject and its restrictive clauses, an array of terms are returned
 
 select`tall _people_ who carry a ring that is not iron` [$.tony, $.jane]
 
@@ -562,7 +620,7 @@ select`tall _people_ who carry a ring that is not iron` [$.tony, $.jane]
 suspects.forEach(suspect=>
 {
 	fact=suspect.fact.who
-	noun=suspect.who
+	term=suspect.who
 	reify.reify`Parker arrested ${suspect.who.id}.`
 })
 
@@ -587,13 +645,13 @@ reify.reify`Player wears ring.` Player is the subject, ring, the object. The two
 
 Some 1-ary relations are not truly 1-ary  `player ate.` Is really `player ate food`.  `player jumped` is really `player jumped up`  True 1-aries 
 
-nouns, predicates, and facts are entities stored in the knowledge base by their ids.  The id of a  fact the ids of the subject,predicate,noun concatenated together: player_wears_ring.
+terms, predicates, and facts are entities stored in the knowledge base by their ids.  The id of a  fact the ids of the subject,predicate,term concatenated together: player_wears_ring.
 
-Facts with arity greater than 2 may have the predicate id split up: reify.reify`john gave ring to mary` has a predicate gave_to.  Predicate is stored in database as gave_to.  Noun list is john, ring, mary.
+Facts with arity greater than 2 may have the predicate id split up: reify.reify`john gave ring to mary` has a predicate gave_to.  Predicate is stored in database as gave_to.  Term list is john, ring, mary.
 
 reify.reify`john gave ring to mary` adds the following to the knowledge base.
 
-john_gave_ring_to_mary={predicate:reify.net.gave_to,noun:[reify.net.john,reify.net.ring,reify.net.mary]}
+john_gave_ring_to_mary={predicate:reify.net.gave_to,term:[reify.net.john,reify.net.ring,reify.net.mary]}
 gave_to=predicate
 john={}
 ring={}
@@ -602,7 +660,7 @@ mary={}
 
 
 reify.select`john gave ___ to ___?` returns john_gave_ring_to_mary fact
-reify.select`john gave _gift_ to _whom_?` returns new fact based on john_gave_ring_to_mary that also includes {gift: noun[1], whom:noun[2]}
+reify.select`john gave _gift_ to _whom_?` returns new fact based on john_gave_ring_to_mary that also includes {gift: term[1], whom:term[2]}
 
 compound facts are facts about facts
 
@@ -614,29 +672,79 @@ Reify creates facts.  Nullify ends them. Check returns boolean.  Select returns 
 
 reify.reify`${{id:"bar",description:"a dank and dusty den",name:"Dimby's Bar"}} exits north to ${{id:"foyer",description:"a cheerful and welcoming place"}}.`
 reify.reify`${{id:"locket",description:"a beautiful locket"}} is thing. Bar contains locket.`
-reify.select`_noun1_ contains locket.`  //Returns all facts where noun1 contains locket.
+reify.select`_term1_ contains locket.`  //Returns all facts where term1 contains locket.
 reify.check`bar contains locket.` //Return true if at least one fact matches the pattern.
 
 reify.reify``._`` //narrates without going through plot. 
 reify.reify`` //reifies silently
 reify.now`reify statement` //reifies and checks plot for implications.
 
+Negative facts:
 
+Select only works on existing facts.  
 
+reify.select`player does not carry ring` only works if the `player carries ring` fact exists with negative polarity.  
+reify.check`player does not carry ring` returns true if fact exists with negative polarity or fact does not exist at all.
 
-
-
+reify.select`player carries _item_`.filter`#item is not shiny`
 
 
 
 -------4. Event Handling------- 
 The player interacts with the story through text input, clicking, drag/drop.  The reify event handlers associated with these inputs and turns the input into a reify statements. 
 
-Reifying triggers matching scenes. scenes change the webpage through narration and update the semantic network through unfolding. The unfolding may trigger additional scenes by reifying or by updating the properties of nouns.
+Reifying triggers matching scenes. scenes change the webpage through narration and update the semantic network through unfolding. The unfolding may trigger additional scenes by reifying or by updating the properties of terms.
 
-Changing a noun's property generates a reality from a reify of the form `theNoun changed property` which will then be matched against scenes `theNoun is theAdjective`
+Changing a term's property generates a reality from a reify of the form `theTerm changed property` which will then be matched against scenes `theTerm is theAdjective`
 
-For pure choice based fiction that does not do a lot of tracking of the world state, it may be inconvenient to create nouns and predicate just to match a scene. It is possible to link a scene directly by declaring the scene with a handle using @, for example reify.scene`@exciting denouement`  The scene may then be called directly with reify.tell`exciting denouement`.
+For pure choice based fiction that does not do a lot of tracking of the world state, it may be inconvenient to create terms and predicate just to match a scene. It is possible to link a scene directly by declaring the scene with a handle using @, for example reify.scene`@exciting denouement`  The scene may then be called directly with reify.tell`exciting denouement`.
+
+Scene only works on new facts.
+
+reify.scene and its subsidiaries compose and return a single function which is index in the terms and predicates identified in .scene``
+
+
+reify.scene`player wears cardigan or player does not wear cap.` //Triggers scene when players puts on cardigan or takes off hat.
+    ._`a narrative`.append`#story` //One possible storyline
+    ._`another narrative`.replace`#story` //another one
+    ._`another narrative`.prepend`#story` //etc.
+    .action(reality=>
+    {
+        this.storyline[0].say(reality)
+        this.now`vase is broken.` //triggers scenes involving the vase. Suppresses text output
+        this.unfold() //process the next (in terms of specificity) qualifying scene. suppresses text output
+    })   
+
+scene`player carries shiny or dull ring.`
+    .action((reality)=>
+        {
+            
+            reify.now`player is lucky.`.say()  //now returns function to update page
+            reify.unfold().say() //unfold returns function to update page
+        })
+    ._`That's a nice ring!`
+
+
+
+
+//A when condition may be specified to limit where the scene applies.  The condition does not cause triggers to fire. Condition contributes to specificity score.
+
+reify.scene`player wears cardigan.`
+    .when`player does not wear cap.` //scene is not triggered when player takes off cap, because it is in the when. Only triggers when cardigan is worn.
+
+reify.scene`player does not wear ring` //only triggers when  `player wears ring` is created or updated with negative polarity.  
+.when`player does not wear amulet` //evaluate to true if `player wears amulet` has negative polarity or does not exist.
+.now`player is visible`
+.append`#story`._`You are visible once more.`
+
+reify.scene`player wears ring` //only triggers when  `player wears ring` is created or updated with negative polarity.  
+.append`#story`._`You are visible once more.`
+
+reify.scene`player carries ring` //only triggers when  `player wears ring` is created or updated with positive polarity
+.append`#story`._`You fade gently away, with only your breathing and footsteps to give you away.`
+
+
+
 
 
 reify.scene`The player tries going north.`action((reality)=>)
@@ -647,24 +755,34 @@ reify.plot={} //members are scenes.
 reify.scene`select statement`.action((reality)=>{})._`` // adds a scene to the plot. It includes a select statement to match to a reality, an action function and a narration.
 
 
-reify.scene`___ tries going`.action((reality)=>{//update world model})._`narrative`
+reify.scene`_someone_ tries going`.action((reality)=>{//update world model})._`narrative`
 
 scene`statement` is parsed as a reify select statement and then compared to the incoming reality from now.
 scene`@handle` matches handle provided by reify.tell`handle`
 
-All nouns and predicates must be defined before scenes are defined because scenes are indexed in the nouns
+All terms and predicates must be defined before scenes are defined because scenes are indexed in the terms
 
 reify.scene`_person_ takes shiny ring.` //The scene is indexed in ring.
 reify.scene`player takes shiny ring.` //The scene is indexed in both player and ring.
 reify.scene`@player takes shiny ring.` //handle scenes are indexed in the plot only for choice based fiction.
 
-reify.scene`player passed ball to alice and alice is sleepy.`
-reify.scene`player passed ball to alice or alice is sleepy.`
+reify.scene`player passed ball to alice`
+    .when`alice is sleepy.`
 
-reify.scene`player wears cardigan and player wears cap.`
-reify.scene`player wears cardigan and player does not wear cap.`
-reify.scene`player wears cardigan or player does not wear cap.`
 
+
+reify.scene`player wears cardigan. player wears cap.`
+
+reify.scene`player wears cardigan.`
+    .when`player does not wear cap.`
+reify.scene`player wears cardigan.` 
+    .scene`player does not wear cap.`
+    //Chose one position for unfold.
+    .unfold() //unfold before now and append
+    .now`player is out of uniform. coach is aghast.`
+    .unfold() //unfold after now, but before append
+    .append`#story`._`Sartorially, you are not so splendid.`
+    .unfold() //unfold after now and append
 
 Within the action, calling this.unfold() will call the scene that applies but is less specific to the situation. It works like bubbling events in javascript
 
@@ -713,7 +831,7 @@ reify.plot.storyline`___ tried going`.action((reality)=>
 {
 	reality.forEach((fact)=>
 	{
-		reify.reify.`now, ${fact.noun1} in ${fact.noun2}`
+		reify.reify.`now, ${fact.term1} in ${fact.term2}`
 	})
 })
 
@@ -756,7 +874,7 @@ table covers ring.  // ring is underneath the table
 
 player carries ring.
 player wears ring.
-bar connects foyer on north.  //implies a portal. implies abutting. implies two-way passage.  Can we get away with not implying a portal. How does missing nouns affect querying?
+bar connects foyer on north.  //implies a portal. implies abutting. implies two-way passage.  Can we get away with not implying a portal. How does missing terms affect querying?
 bar connects foyer through door1 on north.
 
   //portal is door1. implies adjoining. implies two-way passage
@@ -779,9 +897,9 @@ fact.through={portalN}
 reify.net.bar={bar}
 reify.net.foyer={foyer}
 reify.net.bar_connects_foyer_to_north_through_portalN={bar_connects_foyer_to_north_through_portalN}
-reify.net.noun1.bar={bar_connects_foyer_to_north_through_portalN}
-reify.net.noun2.foyer={bar_connects_foyer_to_north_through_portalN}
-reify.net.noun3.portalN={bar_connects_foyer_to_north_through_portalN}
+reify.net.term1.bar={bar_connects_foyer_to_north_through_portalN}
+reify.net.term2.foyer={bar_connects_foyer_to_north_through_portalN}
+reify.net.term3.portalN={bar_connects_foyer_to_north_through_portalN}
 reify.net.verb.connects={bar_connects_foyer_to_north_through_portalN}
 reify.net.predicate={connects_to_through}
 
@@ -797,8 +915,8 @@ reify.net.player={player}
 reify.net.ring={ring}
 reify.net.player_carries_ring={player_carries_ring}
 
-reify.net.noun1.player={player_carries_ring}
-reify.net.noun2.ring={player_carries_ring}
+reify.net.term1.player={player_carries_ring}
+reify.net.term2.ring={player_carries_ring}
 reify.net.verb.carries={player_carries_ring}
 reify.net.predicate.carries={player_carries_ring}
 
