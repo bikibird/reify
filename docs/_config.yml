@@ -29,7 +29,7 @@ url: "https://reify-fiction.net" # the base hostname & protocol for your site, e
 github_username:  bikibird
 
 # Build settings
-theme: just-the_docs
+theme: minima
 plugins:
   - jekyll-feed
 
