@@ -1,18 +1,18 @@
-.ishml-choice
+.reify-choice
 {
 	cursor: pointer;
 }
-.ishml-draggable
+.reify-draggable
 {
 	display: inline-block;
 	cursor: grab;
 }
-.ishml-draggable-dragging
+.reify-draggable-dragging
 {
 	cursor: grabbing;
 }
 
-.ishml-draggable-accepted
+.reify-draggable-accepted
 {
 	
 	cursor: grab;
@@ -20,12 +20,12 @@
 	transition-timing-function:ease-in;
 	transition-duration: 2s;
 }
-.ishml-draggable-hover
+.reify-draggable-hover
 {
 	color: orangered
 
 }
-.ishml-draggable-rejected
+.reify-draggable-rejected
 {
 	--transitions:2;
 	cursor: none;
@@ -33,50 +33,50 @@
 	transition-timing-function:ease-out;
 	transition-duration: .5s;
 }
-.ishml-disappear
+.reify-disappear
 {
 	visibility:hidden;
 }
-.ishml-dropbox
+.reify-dropbox
 {
 	border-style: hidden;
 }
-.ishml-dropbox-hover
+.reify-dropbox-hover
 {
 	border-style: dotted;
 }
-.ishml-dropbox-accepted
+.reify-dropbox-accepted
 {
 	color:purple;
 	transition-property:color;
 	transition-duration: .5s;
 }
-.ishml-dropbox-rejected
+.reify-dropbox-rejected
 {
 	color:darkred;
 	transition-property:color;
 	transition-duration: .5s;
 }
 
-.ishml-comma-list, .ishml-comma-list li 
+.reify-comma-list, .reify-comma-list li 
 { 
     display: inline; 
 	list-style: none; 
 	padding-left: 0;
 }
-.ishml-comma-list li:after 
+.reify-comma-list li:after 
 { 
     content: ", "; 
 }
-.ishml-comma-list li:last-child:after 
+.reify-comma-list li:last-child:after 
 { 
     content: ""; 
 }
-.ishml-comma-list li:nth-last-child(3) + li:after 
+.reify-comma-list li:nth-last-child(3) + li:after 
 { 
     content: ", and ";
 }
-.ishml-comma-list li:nth-last-child(2):first-child:after 
+.reify-comma-list li:nth-last-child(2):first-child:after 
 { 
     content: " and ";
 }
