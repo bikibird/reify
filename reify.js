@@ -1771,9 +1771,11 @@ reify.Passage.__handler=
 		}
 		else 
 		{
-			if (property.toUpperCase()===property) 
+		//	if (property.toUpperCase()===property) 
+            if (property.startsWith("$")) 
 			{
-				return new reify.Passage(target).tag(property.toLowerCase())
+				//return new reify.Passage(target).tag(property.toLowerCase())
+                return new reify.Passage(target).tag(property.slice(1))
 			}
 			else
 			{
@@ -1794,7 +1796,7 @@ reify.template.__handler=
 	 //_.a.TAG.b.c() becomes _.a(b(c())) b(c()) is tagged
 	 //_.a.b.tag becomes _.a(b(echo(tag)))
 	 //_.a.b.tag.data1 becomes _.a(b(data1(echo(tag)))))
-	 //_.a.b.tag.data1.data2 becomes _.a(b(datadata1(echo(tag)))))
+	 //_.a.b.tag.data1.data2 becomes _.a(b(data2(data1(echo(tag)))))
 	 //_.a.tags.b becomes 
 	 //_.a.cap.pick("cat","dog","frog")
 	 //t=>_.a.cap(t.term.description.z)
@@ -1819,12 +1821,15 @@ reify.template.__handler=
 				reify.template.__handler
 			)
 		}
-		//_.a.b.c.TAG() becomes _.a(b(c())) c() is tagged
-	 	//_.a.TAG.b.c() becomes _.a(b(c())) b(c()) is tagged
-		if (property.toUpperCase()===property)  //property is request to create a tagged passage
+		//_.a.b.c.$tagName() becomes _.a(b(c())) c() is tagged
+	 	//_.a.$tagName.b.c() becomes _.a(b(c())) b(c()) is tagged
+		//if (property.toUpperCase()===property)  //property is request to create a tagged passage
+        if (property.startsWith("$"))  //property is request to create a tagged passage
 		{
-			var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.toLowerCase()))
-			var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.toLowerCase())
+			//var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.toLowerCase()))
+			//var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.toLowerCase())
+            var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.slice(1)))
+			var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.slice(1))
 			var handler=Object.assign(
 				{
 					wrapper:template,
@@ -2398,6 +2403,8 @@ reify.template.define("next").as(function next(precursor)
 	precursor.echo=false
 	return precursor
 })
+
+reify._=reify.template._
 
 // #endregion
 // #region narrative
