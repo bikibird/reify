@@ -13,7 +13,7 @@ https://reify-fiction.org
 @bikibird
 */
 
-const reify ={}
+const reify =function(literals, ...expressions) {return new reify.classes.entity(literals,...expressions)}
 reify.past=0 //I ATE
 reify.present=1 //I EAT
 reify.progressive=2 //I AM EATING
@@ -2528,7 +2528,7 @@ reify.Reality=class Reality
 
         /*
             get reality of facts
-            gather scenes from terms and predicates
+            gather scenes from entities and predicates
             sort scenes into an array named plot by specificity.
             call plot[0].unfold(plot[].slice(1),this)
         */
@@ -2543,7 +2543,7 @@ reify.Reality=class Reality
                     let term=this.placeholder[text]
                     if (term)
                     {
-                        text= fact.terms[term.index].id
+                        text= fact.entities[term.index].id
                     }
                 }
                 return text
@@ -2556,7 +2556,7 @@ reify.Reality=class Reality
 }
 
 
-reify.plot={_term:{},_fact:{}}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
+reify.plot={_entity:{},_fact:{}}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
 reify.classes={}  //Classes that users might want to extend
 reify.proxies={}
 reify.proxies.newless= //instantiate a class without new operator
@@ -2599,7 +2599,7 @@ reify.facts=function(literals, ...expressions)
 // #endregion
 
 // #region term
-reify.proxies.term=
+reify.proxies.entity=
 {	
 	//term.property(value) sets value of property and returns term
 	//term.property() returns value of property
@@ -2646,7 +2646,7 @@ reify.proxies.term=
 	}
 	
 }
-reify.name=function(literals, ...expressions) {return new reify.classes.term(literals,...expressions)}
+
 // #endregion
 
 // #region classes
@@ -2656,8 +2656,11 @@ reify.classes.fact= class Fact
     {
         constructor(statement)
         {
-    
-            let fact=reify.plot._fact[statement.id]
+            const {predicate,entities}=statement
+            let id=entities[0] +" "+reify.lang.ing(predicate.id)+" "+entities[1]
+            for (let index = 2; index < entities.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+entities[index]}
+            id="["+id+"]"
+            let fact=reify.plot._fact[id]
 
             if (fact) //update existing fact.
             {
@@ -2672,25 +2675,25 @@ reify.classes.fact= class Fact
             }
             else
             {
-                Object.defineProperty(this, "id",{value:statement.id,enumerable:false})
+                Object.defineProperty(this, "id",{value:id,enumerable:false})
                 Object.defineProperty(this, "predicate",{value:statement.predicate,enumerable:false})
                 Object.defineProperty(this, "tense",{value:statement.tense,enumerable:false})
                 Object.defineProperty(this, "mood",{value:statement.mood,enumerable:false})
                 Object.defineProperty(this, "polarity",{value:statement.polarity,enumerable:false})
-                Object.defineProperty(this, "terms",{value:statement.terms,enumerable:false})
+                Object.defineProperty(this, "entities",{value:statement.entities,enumerable:false})
                 Object.defineProperty(this, "history",{value:[],enumerable:false})
                 this.history[reify.turn]={clock:reify.clock,tense:this.tense,mood:this.mood,polarity:this.polarity }
-                fact=reify.plot._fact[statement.id]=this
+                fact=reify.plot._fact[id]=this
             }
             return fact
         }
-        get subject(){return this.terms[0]}
-        get directObject(){return this.terms[1]}
-        get indirectObject(){return this.terms[2]}
+        get subject(){return this.entities[0]}
+        get directObject(){return this.entities[1]}
+        get indirectObject(){return this.entities[2]}
         get verb(){return this.predicate.verb}
         get prepositions(){return this.predicate.prepositions}
     }
-reify.classes.term=class Term
+reify.classes.entity=class Entity
 	{
 		constructor(literals, ...expressions) // maybe template literal notation or function notation
 		{
@@ -2704,21 +2707,21 @@ reify.classes.term=class Term
                     _indexes:{value:[],enumerable:false,writable:false},
                     scenes:{value:new Set(),enumerable:false,writable:false}
                 })
-			let term=new Proxy(this,reify.proxies.term)
-			// reify.net[this.id]=term  Defect reify.net is obsolete?
-            reify.plot._term[term.id]=term
-			reify.glossary.register(this.name).as({part: "term", key:term.id, term:term})
+			let entity=new Proxy(this,reify.proxies.entity)
+			// reify.net[this.id]=entity  Defect reify.net is obsolete?
+            reify.plot._entity[entity.id]=entity
+			reify.glossary.register(this.name).as({part: "entity", key:entity.id, entity:entity})
         
-			return term
+			return entity
 		}
 		aka(literals, ...expressions)
 		{
-			reify.glossary.register(reify.formatName(literals, ...expressions)).as({part: "term", key:this.id})	
+			reify.glossary.register(reify.formatName(literals, ...expressions)).as({part: "entity", key:this.id})	
 			return this
 		}
 		kind(literals, ...expressions)
 		{
-			let kind=reify.plot._term[reify.formatId(literals, ...expressions)]
+			let kind=reify.plot._entity[reify.formatId(literals, ...expressions)]
             
 			if (kind)
 			{
@@ -2927,7 +2930,7 @@ reify.predicate=function(literals, ...expressions)
 reify.dsl={}
 
 /*reusable syntax rules
-    argument=>element |wildcard | placeholder
+    argument=>entity |wildcard | placeholder
     preposition=>terminal
     verb=>terminal
 
@@ -2935,7 +2938,7 @@ reify.dsl={}
 
 
 
-reify.dsl.element=reify.Syntax().configure({filter:(definition)=>definition?.part==="term"})
+reify.dsl.entity=reify.Syntax().configure({filter:(definition)=>definition?.part==="entity"})
 reify.dsl.wildcard=reify.Syntax().configure({regex:/^\[[a-zA-Z]\w*\]/})
 reify.dsl.argument=reify.Syntax()
     .snip(0)
@@ -2943,8 +2946,8 @@ reify.dsl.argument=reify.Syntax()
     .snip(2)
     .configure({mode:reify.Syntax.apt})
 reify.dsl.argument[0].snip("wildcard",reify.dsl.wildcard)
-reify.dsl.argument[1].snip("element",reify.dsl.element).snip("wildcard",reify.dsl.wildcard)
-reify.dsl.argument[2].snip("element",reify.dsl.element)
+reify.dsl.argument[1].snip("entity",reify.dsl.entity).snip("wildcard",reify.dsl.wildcard)
+reify.dsl.argument[2].snip("entity",reify.dsl.entity)
 
 
 reify.dsl.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
@@ -2961,9 +2964,9 @@ reify.dsl.verb=reify.Syntax().configure({filter:(definition)=>definition?.part==
 /*statement grammar 
     statements=>(statement period)+  //create one or more facts
     statement=>subject verb directObject prepositionalPhrase*
-    subject=>element 
+    subject=>entity 
     prepositionalPhrase=>preposition target
-    directObject=>element
+    directObject=>entity
     target=>argument
 */
 
@@ -2976,7 +2979,7 @@ reify.dsl.statements=reify.Syntax()
     }})
 reify.dsl.statements.period.configure({regex:/^\./,lax:true})
 reify.dsl.statements.statement=reify.Syntax()
-    .snip("subject",reify.dsl.element).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.element).snip("prepositionalPhrase",reify.dsl.prepositionalPhrase)
+    .snip("subject",reify.dsl.argument).snip("verb",reify.dsl.verb).snip("directObject",reify.dsl.argument).snip("prepositionalPhrase",reify.dsl.prepositionalPhrase)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {
         let gist =interpretation.gist
@@ -2994,20 +2997,16 @@ reify.dsl.statements.statement=reify.Syntax()
 
         if (verb.converse)
         {
-            argumentList.push(directObject.definition.term)
-            argumentList.push(subject.definition.term)
+            argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
         else
         {
-            argumentList.push(subject.definition.term)
-            argumentList.push(directObject.definition.term)
+            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
-        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.definition.term))
-
-        let id=argumentList[0].id +" "+reify.lang.ing(predicate.id)+" "+argumentList[1].id
-        for (let index = 2; index < argumentList.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+argumentList[index].id}
-        id="["+id+"]"
-        interpretation.gist={id:id,predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,terms:argumentList}
+        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.definition.entity))
+        interpretation.gist={predicate:predicate,tense:verb.tense,mood:verb.mood,voice:verb.voice,polarity:verb.polarity,entities:argumentList}
         return true
 
     }})
@@ -3029,7 +3028,7 @@ reify.dsl.statements.statement=reify.Syntax()
     group => leftParen expression rightParen
     atom => trigger  pattern
     trigger => when | whenever | while
-    argument =>wildcard element | element wildcard | element | wildcard     
+    argument =>wildcard entity | entity wildcard | entity | wildcard     
     pattern => subject verb directObject prepositionalPhrase*
     subject =>argument
     prepositionalPhrase =>preposition target
@@ -3063,15 +3062,15 @@ reify.dsl.atom=reify.Syntax()
 
         if (verb.converse)
         {
-            argumentList.push(directObject.element?.definition.key ?? directObject.wildcard.definition.match)
-            argumentList.push(subject.element?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
         else
         {
-            argumentList.push(subject.element?.definition.key ?? directObject.wildcard.definition.match)
-            argumentList.push(directObject.element?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
-        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.element.definition.key ?? phrase.target.wildcard.definition.match ))
+        predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.entity.definition.key ?? phrase.target.wildcard.definition.match ))
 
         //for when and while build reify.plot.[predicate.id][tense][polarity][argument1[[argument2[]...[argumentN] data structure
         //for when add a when node at the end of the data structure. Now populates with facts for both when node and parent of when.
@@ -3140,14 +3139,14 @@ while reality is the main reality
             const selection=[]
             subplot.reality.forEach(fact=>
             {
-                const row={term:{},reasoning:[fact]}
+                const row={entity:{},reasoning:[fact]}
                 for (const [key, index] of Object.entries(wildcard)) 
                 {
-                    row.term[key]=fact.terms[index]  
+                    row.entity[key]=fact.entities[index]  
                 }
                 selection.push(row)
             })
-            return  selection //[{term,reasoning}]
+            return  selection //[{entity,reasoning}]
         }
         //interpretation.gist==={subplots[subplot],specificity:specificity,selector:selector}
         return true
@@ -3191,8 +3190,8 @@ reify.dsl.term=reify.Syntax()
                     {
                         for (const rowB of b)
                         {
-                            const commonKeys = Object.keys(rowA.term).filter(key => Object.hasown(rowB.term,key))
-                            if (commonKeys.every((key)=>rowA.term[key]===rowB.term[key]))//rowB matched rowA
+                            const commonKeys = Object.keys(rowA.entity).filter(key => Object.hasown(rowB.entity,key))
+                            if (commonKeys.every((key)=>rowA.entity[key]===rowB.entity[key]))//rowB matched rowA
                             {
                                 results.push(rowA) //Defect needs to be cloned and reasoning added.
                                 if (operation.operator.definition.part==="intersection") break 
@@ -3429,7 +3428,7 @@ reify._update=function(fact,assert)
     //while pattern
 
     let subtree=reify.plot
-    const path=[fact.predicate.id].concat(fact.tense).concat(fact.polarity).concat(fact.terms.map(term=>term.id))
+    const path=[fact.predicate.id].concat(fact.tense).concat(fact.polarity).concat(fact.entities.map(entity=>entity.id))
     const when=[]
     function traverse(path,subtree,retract)
     {

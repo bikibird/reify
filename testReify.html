@@ -8,8 +8,8 @@
        <script src="reify.js"></script>
        <script src="reify-en-us.js"></script>
        <script>
-        const { name, adjective, $:net, predicate, facts, select,scene,now } = reify
-        const _=reify.template._
+        const { predicate, facts, scene,now,_} = reify
+ 
        // predicate`give to`
         predicate`carry`.converse`be carried by`
        /* predicate`wear`.converse`be worn by`
@@ -19,22 +19,22 @@
         predicate`be east of`.converse`be west of`
         predicate`be acquaintance of`.converse`be acquaintance of`*/
        //DEFECT Obsolete? adjective`shiny,dull`.describes`surface` 
-        name`place`.place(true)
-        name`room`.kind`place`.room(true)
+        reify`place`.place(true)
+        reify`room`.kind`place`.room(true)
         
-        name`portal`.portal(true)
-        name`bar door`.kind`portal`
+        reify`portal`.portal(true)
+        reify`bar door`.kind`portal`
         
-        name`person`.person(true)
+        reify`person`.person(true)
 
-        name`player`.height(72)
-        name`alice`
-        name`people`
-        name`ring`
-        name`treasure chest`.aka`chest`
-        name`plan`
+        reify`player`.height(72)
+        reify`alice`
+        reify`people`
+        reify`ring`
+        reify`treasure chest`.aka`chest`
+        reify`plan`
 
-        name`foyer`.display`Foyer of the Opera House`.aka`entryway`
+        reify`foyer`.display`Foyer of the Opera House`.aka`entryway`
             .kind`room`
             .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
 
@@ -48,9 +48,15 @@ scene`when player carries [something]`
     .plot(()=>
     {
         console.log(this.mise)
+        // this.now`player is burdened with [something].`
     })
 
 now`player carries ring.`
+/*
+var myPhrase=_`Hello, ${_.$planet.pick()}. ${_.$remark.pick()}`
+    .fill({planet:["Venus","Earth","Mars"],remark:["Long time no see.","I'm home.","Good to be back."]})
+console.log(myPhrase.say().text)*/
+
 
 
   //facts`ring is carried by player.`
