@@ -26,8 +26,8 @@ planets.populate("Mercury","Ceres","Pluto","Jupiter","Saturn")
 planets.populate({value:"Venus", position:2},{value:"Earth", position:3},{value:"Mars", position:4})
 planets.populate([{planet:"Venus", position:2},{planet:"Earth", position:3},{planet:"Mars", position:4}])    
 //populate nested phrase
-var myphrase=_`Hello, ${_.PLANET.pick()}. ${_.REMARK.pick()}`
-myphrase.populate({planet:["Venus","Earth","Mars"],remark:["Long time no see.","I'm home.","Good to be back."]})
+var myPhrase=_`Hello, ${_.PLANET.pick()}. ${_.REMARK.pick()}`
+myPhrase.populate({planet:["Venus","Earth","Mars"],remark:["Long time no see.","I'm home.","Good to be back."]})
 
 //1-4
 var myPhrase = _`Hello, ${_.cycle.shuffle("Mecury","Venus","Earth","Mars","Jupiter","Saturn","Uranus","Neptune")}. `

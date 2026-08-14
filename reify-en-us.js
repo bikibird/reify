@@ -300,11 +300,7 @@ reify.lang.conjugatePredicate=(predicate,voice)=>
 
     }
 
-    //carried ring endangers the plan  //adjective
-    //carrying player endangers the plan //adjective
 
-	reify.adjective(reify.lang.ing(verb)).describes(noun=>noun._indexes[0].filter(predicate._index).size>0)
-    reify.adjective(reify.lang.ed(verb)).describes(noun=>noun._indexes[1].filter(predicate._index).size>0)
 
 
 }
@@ -589,7 +585,8 @@ reify.lang.ing=function(verbStem)
 }
 reify.lang.ing.trie={n:{a:{e:0,o:0,l:{p:1},p:{a:{j:1},$:1},m:{o:0,$:1},h:0,g:0,$:1},i:{g:{r:0,$:1},a:0,t:{$:1,e:0},r:{g:{a:0,$:1}},o:0,v:0,e:0,s:{$:1,e:0,o:0},u:0,$:1},e:{d:{r:0,l:0,d:0,i:0,u:0,a:0,$:1},k:{$:1,i:0,c:0,a:0,o:0,r:0},g:{r:0,$:1},p:{$:1,o:0,i:0,r:0,e:0,a:0,m:0,p:0,l:0}},o:{l:{l:1},c:{a:0,$:1},d:{$:1,r:0,n:0}},u:1},e:{e:0,t:{n:0,$:2},g:{n:{u:{l:{p:2,b:2,$:0},$:2},i:{w:{t:2,$:0},r:2,h:{$:2,n:0,w:0},p:2},$:2},$:2},c:{a:{$:2,m:{$:0,i:2}},c:0,$:2},s:{s:{a:{v:2},$:2},$:2},l:{e:{n:2},$:2},u:{q:{i:{l:{b:2},$:2},$:2},g:{e:{n:2},$:2},c:{$:0,s:2,e:2},l:{c:0,$:2},r:{$:0,c:2,t:2,b:2},$:2},i:{d:{$:3,r:0},g:{o:{o:3},$:3},t:{r:0,$:3},m:0,$:3},o:0,y:{d:{$:0,r:2},b:2},a:0,$:2},t:{e:{u:{q:{o:{c:1}},$:1},s:{o:{t:1},r:{e:1},s:{o:{p:1}},m:0,$:1},n:{$:1,g:0,n:0,o:0},g:{d:0,r:{o:1},$:1},b:{b:0,$:1},l:{f:0,$:1,l:0,a:0,e:0,m:0},k:{s:1},v:{o:0,i:0,$:1},r:{r:0,p:0,$:1},p:{$:1,m:0,r:0},h:{w:1},j:1,t:1,w:1},u:{o:0,b:{e:{r:1},$:1},$:1},i:{u:{q:1},b:{$:1,a:0,e:0,i:0,r:0,b:0},m:{i:0,o:{v:0,$:1},b:{u:{s:{$:1,e:0}}},$:1},s:{o:0,i:0,$:1,n:0},f:{e:{n:0,$:1},m:0,$:1,o:{r:{t:1}}},h:1,r:{g:1},l:1,k:1,n:1,w:1,p:1},o:{l:{$:1,i:0,l:{a:{$:1,b:0}}},o:0,g:0,r:{$:1,r:0},v:0,i:0,c:0,$:1},a:{e:0,o:0,b:{$:1,m:0},g:0,$:1}},r:{e:{v:{a:{$:1,e:0,l:0,h:0,u:0,w:0}},t:{e:{d:1},n:{i:{w:0,s:{i:1,$:0},l:0,$:1}}},f:{n:1,e:1,s:1}},i:{a:0,$:1},o:{h:{b:1}},a:{e:0,g:0,d:0,l:0,t:{r:0,$:1},o:0,$:1},u:{e:0,o:0,m:{e:1},g:0,$:1}},d:{e:{e:0,l:{s:1},p:0,$:1},a:{l:{c:1},e:0,o:0,b:0,$:1},i:{b:1,k:1,r:1},o:{o:0,$:1},u:{o:0,a:0,e:0,$:1}},s:{a:{g:1},i:{d:1},u:{c:{o:{p:1}},l:{p:1}},o:1},l:{u:{n:1},a:{d:{e:{m:1}},b:1,n:1,r:{h:1,e:1},v:{i:{r:{$:1,r:0}}},u:1,h:1,t:{o:1},p:1},i:{v:{e:{d:{$:0,e:1}}},r:1},e:{p:{u:0,$:1},b:{e:1},g:{$:1,d:0},v:{i:{r:{d:1}}},n:{n:{a:{l:1}}},c:{r:{a:{m:1}},x:1}},o:{r:{a:0,$:1},t:{x:1},j:1}},b:{i:1,u:{a:0,$:1},a:1,o:{o:0,$:1},e:1},m:{i:{d:1,$:0,r:1,h:1,k:1,l:1,w:1},e:{e:0,d:0,t:{s:1},$:1},o:{l:{g:1},t:{m:1}},a:{r:{k:0,$:1},e:0,o:0,a:0,$:1},u:{u:0,$:1}},p:{e:{e:0,k:0,$:1},a:{e:0,o:0,h:{$:1,w:0},$:1},i:{l:{$:1,l:0},s:{$:1,s:0},$:1},o:{l:{e:0,l:{a:{g:1}},$:1},o:0,t:{s:{e:{l:0,$:1},$:1},$:1},$:1},u:{c:{c:0,$:1},o:0,k:0,a:0,r:0,$:1},y:1},c:{a:4,i:{s:{y:4,$:1},$:4},o:4,e:1,l:4},k:{o:{r:1},e:{r:1},a:{y:1}},g:{n:0,i:{a:0,$:1},a:{m:0,$:1},g:0,$:1},f:{i:1,e:{r:1}},z:{i:1},v:1}
 
-reify.lang.ing.gerunds={bcc:"bcc'ing",cc:"cc'ing",dj:"dj'ing",id:"id'ing",ko:"ko'ing",od:"od'ing",ok:"ok'ing"}
+reify.lang.ing.gerunds={bcc:"bcc'ing",cc:"cc'ing",dj:"dj'ing",id:"id'ing",ko:"ko'ing",od:"od'ing",ok:"ok'ing",is:"is being",be:"being",are:"are being",was:"was being"}
+
 
 reify.lang.modalVerbs=
 [

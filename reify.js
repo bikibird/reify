@@ -13,7 +13,7 @@ https://reify-fiction.org
 @bikibird
 */
 
-const reify =function(literals, ...expressions) {return new reify.classes.entity(literals,...expressions)}
+const reify =function reify(literals, ...expressions) {return new reify.classes.entity(literals,...expressions)}
 reify.past=0 //I ATE
 reify.present=1 //I EAT
 reify.progressive=2 //I AM EATING
@@ -2518,7 +2518,7 @@ reify.Reality=class Reality
         this.set.forEach(task)
         return this
     }
-    now(literals, ...expressions)
+    now(literals, ...expressions) //DEFECT see other nows.  Also do we even need realities now that we have mises?
     {
         // for each fact, replace each placeholder with term id 
         // reify each statement
@@ -2556,8 +2556,12 @@ reify.Reality=class Reality
 }
 
 
-reify.plot={_entity:{},_fact:{}}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
+reify.plot=function plot(){Object.values(reify.plot._fact).forEach((fact)=>reify._update(fact,true))}
+reify.plot._entity={}
+reify.plot._fact={}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
+
 reify.classes={}  //Classes that users might want to extend
+
 reify.proxies={}
 reify.proxies.newless= //instantiate a class without new operator
 {
@@ -2584,7 +2588,11 @@ reify.facts=function(literals, ...expressions)
         }
         else
         { 
-            interpretations[0].gist.forEach(statement=>new reify.classes.fact(statement))
+            interpretations[0].gist.forEach(statement=>
+            {
+                statement.entities= statement.entities.map(entity=>entity=reify.plot._entity[entity])
+                new reify.classes.fact(statement)
+            })
         }
     }
     else
@@ -2657,8 +2665,8 @@ reify.classes.fact= class Fact
         constructor(statement)
         {
             const {predicate,entities}=statement
-            let id=entities[0] +" "+reify.lang.ing(predicate.id)+" "+entities[1]
-            for (let index = 2; index < entities.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+entities[index]}
+            let id=entities[0].id +" "+reify.lang.ing(predicate.id)+" "+entities[1].id
+            for (let index = 2; index < entities.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+entities[index].id}
             id="["+id+"]"
             let fact=reify.plot._fact[id]
 
@@ -2875,7 +2883,7 @@ reify.classes.Scene=class Scene
                     toString:()=>source,
                     select:{value:gist.selector,enumerable:false,writable:false},
                     storylines:{value:[],enumerable:false,writable:true},
-                    plot:{value:()=>source,enumerable:false,writable:true},
+                    unfold:{value:()=>source,enumerable:false,writable:true},
                     recency:{value:reify.classes.Scene.updateRecency(),enumerable:false,writable:true}, 
                     specificity:{value:gist.specificity,enumerable:false,writable:false},
                     mise:{value:[],enumerable:false,writable:true},
@@ -2886,7 +2894,6 @@ reify.classes.Scene=class Scene
                 
                 return this
             }
-            
         }
         else
         {
@@ -2896,18 +2903,52 @@ reify.classes.Scene=class Scene
         }
 
     }
-    narrate(storyline)
+    now(literals,...expressions)
     {
+        let {success,interpretations}=reify.statementParser.analyze(reify.toString(literals, ...expressions))
+        if (success)
+        {
+            if (interpretations.length==0)
+            {
+                throw new Error("ERROR 0006: Unable to parse reify source code-- no interpretations.")
+            } 
+            else if (interpretations.length>1) 
+            {
+                throw new Error("ERROR 0007: Unable to parse reify source code-- more than one interpretation.")
+            }
+            else
+            { 
+                interpretations[0].gist.forEach(statement=>
+                {
+
+                    this.mise.forEach(row=>
+                    {
+                        statement.entities= statement.entities.map(entity=>entity=reify.plot._entity[entity]??row.entity[entity.slice(1,-1)])
+                        console.log(reify._update(new reify.classes.fact(statement),true)())
+                    })
+
+                 //   const f=new reify.classes.fact(statement)
+                
+
+                })
+            }
+        }
+        else
+        {
+            console.log(interpretations)
+            throw new Error("ERROR 0005: Unable to parse reify source code.")
+        }
         return this
     }
-    action(plot)
-    {
-        this.plot=()=>plot(this.condition())
-        return this
-    }
+
     storyline(literals,...expressions)
     {
         storylines.push(reify.template._(literals,...expressions))
+        return this
+    }
+    unfolding(aFunction)
+    {
+        this.unfold=aFunction.bind(undefined,this)
         return this
     }
 }
@@ -2998,11 +3039,11 @@ reify.dsl.statements.statement=reify.Syntax()
         if (verb.converse)
         {
             argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
-            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? subject.wildcard.definition.match)
         }
         else
         {
-            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? subject.wildcard.definition.match)
             argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
         predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.definition.entity))
@@ -3381,14 +3422,10 @@ reify.now=function(literals, ...expressions)
             }
             else
             { 
-                let reality=new reify.Reality()
-                interpretations[0].gist.forEach(statement=> reality.add(new reify.classes.fact(statement)))
-                reality.forEach(fact=>
+                interpretations[0].gist.forEach(statement=>
                 {
-                    console.log(reify._update(fact,true)())
-                    
-
-                
+                    statement.entities= statement.entities.map(entity=>entity=reify.plot._entity[entity])
+                    reify._update(new reify.classes.fact(statement),true)()
                 })
             }
         }
@@ -3416,8 +3453,6 @@ reify.tell=function(literals, ...expressions) //intro
 {
     //tell the intro 
 
-    //activate scenes
-    Object.values(this.plot._fact).forEach((fact)=>reify._update(fact,true))
     
 }
 
@@ -3469,7 +3504,7 @@ reify._update=function(fact,assert)
         {
             const scene=when.shift()
             const mise=scene.mise=scene.select()
-            if (mise.length >0) return scene.plot(subplot)
+            if (mise.length >0) return scene.unfold(subplot)
         }
     }
     return subplot
