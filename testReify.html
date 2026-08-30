@@ -4,7 +4,7 @@
     </head>
     <body>
         <p>test reify</p>
-       
+       <div id="story"></div>
        <script src="reify.js"></script>
        <script src="reify-en-us.js"></script>
        <script>
@@ -51,8 +51,23 @@ reify.scene`when player carries [something]`
       //  console.log("unfold")
       //  console.log(subplot)
       //  console.log(scene.mise)
-        scene.now`[something] is shiny.`
+       // return reify._`this is the player carries something scene. ${scene.now`[something] is shiny.`}`
+       return reify._`This is the player carries something scene. ${scene.now`[something] is shiny.`}`
+    
     })
+
+reify.scene`when [something] is shiny`
+    ._`The ${reify._.$something.name()} is shiny.`
+    .unfolding((scene,subplot)=>
+    {
+      //  console.log("unfold")
+      //  console.log(subplot)
+      //  console.log(scene.mise)
+       // return reify._`this is the player carries something scene. ${scene.now`[something] is shiny.`}`
+       return scene.storyline() //applies mise to storyline 
+    
+    })
+
 reify.plot() //sorts facts into scenes
 reify.now`player carries ring.` //trigger plot line
 /*

@@ -925,7 +925,7 @@ reify.Passage =class Passage
 		Object.defineProperty(this,"id",{value:"",writable:true})
 		Object.defineProperty(this,"echo",{value:false,writable:true})
 		Object.defineProperty(this,"ended",{value:false,writable:true})
-		Object.defineProperty(this,"_locked",{value:false,writable:true})
+		// Object.defineProperty(this,"_locked",{value:false,writable:true})  Not used anywhere
 		Object.defineProperty(this,"_erasable",{value:false,writable:true})
 		Object.defineProperty(this,"passages",{value:[],writable:true})
 		Object.defineProperty(this,"re",{value:false,writable:true})
@@ -934,7 +934,6 @@ reify.Passage =class Passage
 		Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
 		Object.defineProperty(this,"_tag",{value:"",writable:true})
 		Object.defineProperty(this,"tags",{value:{},writable:true})
-		//Object.defineProperty(this,"tally",{value:0,writable:true})
 		Object.defineProperty(this,"text",{value:"",writable:true})
 		this.fill(...precursor)
 		this.catalog()
@@ -1491,7 +1490,7 @@ reify.Passage =class Passage
 				{
 					if (this.tags.hasOwnProperty(key))
 					{
-						this.tags[key].erasable=true
+						this.tags[key]._erasable=true
 						this.tags[key].fill({_tagPassage:true,_data:items[0][key]}) 
 					}
 				})
@@ -1509,7 +1508,7 @@ reify.Passage =class Passage
 		}
 		//We're at the core so update passage array with items.
 
-		//this.erase()  //get rid of leftovers from last fill
+
 		if(!(items[0]===undefined) && (Object.getPrototypeOf(items[0])===Object.prototype && items[0]?._tagPassage))
 		{
 			this._fill(items[0]._data)
@@ -1661,11 +1660,11 @@ reify.Passage =class Passage
 		this.catalog()
 		return this
 	}
-	lock(id)
+	/*lock(id) //not used anywhere
 	{
 		this._locked=true
 		return this
-	}
+	}*/
 	get then()
 	{
 		var primaryPassage=this
@@ -2014,13 +2013,8 @@ reify.template.sibling=function sibling(passage, property)
 			{	
 				this.results=this.results.map(result=>({value:result[property]}))
 			}	
-			/*Object.assign
-			(
-				{},
-				(result[property].data?{value:result[property].data()}:{value:result[property]})
-			))*/
+
 			this.text=this.toString()
-			//this.tally=this.passages[0].value.tally
 			return this.results
 		}
 	}()		
@@ -2045,14 +2039,7 @@ reify.template.define("child").as(function child(parent,property)
 			{	
 				this.results=this.results.map(result=>({value:result.value[property]}))
 			}
-			
-			/*Object.assign
-			(
-				{},
-				(result.value[property].data?{value:result.value[property].data()}:{value:result.value[property]})
-			))*/
 			this.text=this.toString()
-			//this.tally=this.passages[0].value.tally
 			return this.results
 		}
 	}()		
@@ -2070,7 +2057,6 @@ reify.template.define("ante").as(function ante(outer)
 			var target=this.inner
 			this.results=target.generate()
 			this.text=target.text
-		//	this.tally=target.tally
 			return this.results
 		}
 
@@ -2081,7 +2067,7 @@ reify.template.define("ante").as(function ante(outer)
 			while (target.constructor.name === "antePassage")
 			{
 				counter++
-				target=target.passages[0] //.value
+				target=target.passages[0] 
 			}
 			for (let i = 0; i <counter; i++)
 			{
@@ -2404,7 +2390,12 @@ reify.template.define("next").as(function next(precursor)
 	return precursor
 })
 
-reify._=reify.template._
+
+
+
+
+
+
 
 // #endregion
 // #region narrative
@@ -2518,20 +2509,9 @@ reify.Reality=class Reality
         this.set.forEach(task)
         return this
     }
-    now(literals, ...expressions) //DEFECT see other nows.  Also do we even need realities now that we have mises?
+/*    now(literals, ...expressions) //DEFECT /Not used
     {
-        // for each fact, replace each placeholder with term id 
-        // reify each statement
-        // To Do: process resulting reality through plot.
-        //now`The player does not carry [thing]. The _room_ containing player contains [thing].`
-        //now`The player does not carry [thing]. The _room_ occupied by player contains [thing].`
-
-        /*
-            get reality of facts
-            gather scenes from entities and predicates
-            sort scenes into an array named plot by specificity.
-            call plot[0].unfold(plot[].slice(1),this)
-        */
+ 
         let source=reify.toString(literals, ...expressions).split(/(\[.*?\])/)
         this.set.forEach(fact=>
         {
@@ -2553,6 +2533,7 @@ reify.Reality=class Reality
             
         return this
     }
+        */
 }
 
 
@@ -2643,10 +2624,11 @@ reify.proxies.entity=
 		{
 			if (value===undefined){return target[property]}
 
-			//DEFECT to do: dispatch proposed change to plot
+			
 			target[property]=value
 
-			//DEFECT to do: dispatch change to plot
+			//reify.now`${target.name} revises ${property}.` DEFECT How ae we doing numerical properites
+            
 
 			return receiver
 		}
@@ -2665,7 +2647,7 @@ reify.classes.fact= class Fact
         constructor(statement)
         {
             const {predicate,entities}=statement
-            let id=entities[0].id +" "+reify.lang.ing(predicate.id)+" "+entities[1].id
+            let id=entities[0].id +" "+predicate.id+" "+entities[1].id
             for (let index = 2; index < entities.length; index++) {id=id+" "+predicate.prepositions[index-2]+" "+entities[index].id}
             id="["+id+"]"
             let fact=reify.plot._fact[id]
@@ -2716,7 +2698,7 @@ reify.classes.entity=class Entity
                     scenes:{value:new Set(),enumerable:false,writable:false}
                 })
 			let entity=new Proxy(this,reify.proxies.entity)
-			// reify.net[this.id]=entity  Defect reify.net is obsolete?
+			
             reify.plot._entity[entity.id]=entity
 			reify.glossary.register(this.name).as({part: "entity", key:entity.id, entity:entity})
         
@@ -2803,8 +2785,9 @@ reify.classes.Predicate=class Predicate
         let particles=verb.split(" ")
         if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" or passive constructions for example 
         {
-
             let complement=" "+particles.slice(1).join(" ")
+            if (particles.length===1)complement=""
+            
             reify.glossary.register("is"+complement)//foyer is north of cloakroom
                 .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
             reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
@@ -2883,13 +2866,14 @@ reify.classes.Scene=class Scene
                     toString:()=>source,
                     select:{value:gist.selector,enumerable:false,writable:false},
                     storylines:{value:[],enumerable:false,writable:true},
-                    unfold:{value:()=>source,enumerable:false,writable:true},
+                    unfold:{value:()=>this.storyline(),enumerable:false,writable:true},
                     recency:{value:reify.classes.Scene.updateRecency(),enumerable:false,writable:true}, 
                     specificity:{value:gist.specificity,enumerable:false,writable:false},
                     mise:{value:[],enumerable:false,writable:true},
                     
 
                 })
+
                 gist.subplots.forEach(subplot=>subplot.scenes.push(this))
                 
                 return this
@@ -2918,19 +2902,21 @@ reify.classes.Scene=class Scene
             }
             else
             { 
+                const storylines=[]
                 interpretations[0].gist.forEach(statement=>
                 {
-
+                   
                     this.mise.forEach(row=>
                     {
                         statement.entities= statement.entities.map(entity=>entity=reify.plot._entity[entity]??row.entity[entity.slice(1,-1)])
-                        console.log(reify._update(new reify.classes.fact(statement),true)())
+
+                        storylines.push(reify._update(new reify.classes.fact(statement),true)())
+
                     })
 
-                 //   const f=new reify.classes.fact(statement)
-                
 
                 })
+                return reify._(storylines)
             }
         }
         else
@@ -2941,17 +2927,95 @@ reify.classes.Scene=class Scene
         return this
     }
 
-    storyline(literals,...expressions)
+    storyline(index=0,mise=true)
     {
-        storylines.push(reify.template._(literals,...expressions))
+        if (mise) return this.storylines[index].fill(...this.mise.map(row=>row.entity))??reify._``
+        return this.storylines[index]??reify._``
+    }
+
+    _(literals,...expressions)
+    {
+        this.storylines.push(reify._(literals,...expressions))
         return this
     }
+
     unfolding(aFunction)
     {
         this.unfold=aFunction.bind(undefined,this)
         return this
     }
 }
+
+
+reify.classes.Storyline =class Storyline
+{
+	constructor(...data) 
+	{
+        Object.defineProperties(this,
+        {
+            id:{value:"",writable:true},
+		    prefix:{value:false,writable:true},
+		    storylines:{value:[].concat(data),writable:true},
+            results:{value:[],writable:true},
+            text:{value:"",writable:true}
+        })
+        
+        return new Proxy(this,reify.storylineHandler)
+    }
+    get a()
+    {
+
+    }
+    fill()
+    {
+        //if array 
+        //if object
+        
+
+        return this
+    }
+    say()
+    {
+        this.generate()
+        return this
+    }
+    generate()
+	{
+		this.results=[]
+		this.storylines.forEach((storyline)=>
+		{
+			if (storyline.generate){this.results=this.results.concat(storyline.generate())}
+			else {this.results.push(storyline)}
+		})
+		this.text=this.toString()
+		return this.results
+	}
+    tag(tagId)
+    {
+        this.id=tagId
+        return this
+    }
+    get text(){return}
+    toString()
+	{
+		return this.results.map(result=>
+		{	
+			if (result===undefined){return ""}
+			if (Object.getPrototypeOf(result)===Object.prototype)
+			{
+				if ( result.hasOwnProperty("name"))
+				{
+					return result.name
+				}
+                else return (Object.values(result)[0]).toString
+
+			}            
+            return (result).toString()
+		}).join("")	
+	}
+    
+}
+
 
 
 //reify.predicate=new Proxy(reify.classes.Predicate,reify.proxies.newless)
@@ -3076,7 +3140,7 @@ reify.dsl.statements.statement=reify.Syntax()
     directObject => argument
     target => argument
     argument => term? wildcard
-    //DEFECT: implement labels for non-variables
+   
     //`(player [someone] carries lamp [something] or nancy [someone] carries [something]) and [something] is shiny`
    // No: union operator: +, difference operator: -, intersection operator: * because code switching bad for cognitive load.
 */
@@ -3104,11 +3168,11 @@ reify.dsl.atom=reify.Syntax()
         if (verb.converse)
         {
             argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
-            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? subject.wildcard.definition.match)
         }
         else
         {
-            argumentList.push(subject.entity?.definition.key ?? directObject.wildcard.definition.match)
+            argumentList.push(subject.entity?.definition.key ?? subject.wildcard.definition.match)
             argumentList.push(directObject.entity?.definition.key ?? directObject.wildcard.definition.match)
         }
         predicate.prepositionalPhrase?.forEach(phrase=>argumentList.push(phrase.target.entity.definition.key ?? phrase.target.wildcard.definition.match ))
@@ -3351,7 +3415,7 @@ reify.dsl.expression.termOperation.operator[2].configure({filter:(definition)=>d
 
 reify.dsl.term.factor
     .snip(0) // group=(expression)
-    .snip(1,reify.dsl.atom) // atom  DEFECT:for now it's pattern, but need to implement when triggers
+    .snip(1,reify.dsl.atom)
     .configure({mode:reify.Syntax.apt})
 
 reify.dsl.expression.term.factor[0]
@@ -3425,7 +3489,7 @@ reify.now=function(literals, ...expressions)
                 interpretations[0].gist.forEach(statement=>
                 {
                     statement.entities= statement.entities.map(entity=>entity=reify.plot._entity[entity])
-                    reify._update(new reify.classes.fact(statement),true)()
+                    reify._update(new reify.classes.fact(statement),true)()?.say().append("#story")
                 })
             }
         }
@@ -3506,6 +3570,7 @@ reify._update=function(fact,assert)
             const mise=scene.mise=scene.select()
             if (mise.length >0) return scene.unfold(subplot)
         }
+        return reify._``
     }
     return subplot
     

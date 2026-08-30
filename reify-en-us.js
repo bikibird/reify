@@ -1,202 +1,7 @@
 "use strict"
-// #region glossary
-reify.glossary
-	//.register("the", "a", "an","some").as({ part: "article" })
 
-    .register("when").as({ key:"when", part: "trigger" })
-    .register("whenever").as({key:"whenever", part: "trigger" })
-    .register("while").as({key:"while", part: "trigger" })
-    .register("or").as({ part: "unionOperator" })
-    .register("or all").as({ part: "unionAllOperator" })
-    .register("and").as({ part: "intersectionOperator" })
-    .register("and all").as({ part: "intersectionAllOperator" })
-    .register("except").as({ part: "differenceOperator" })
-    .register("(").as({part:"beginGroup"})
-    .register(")").as({part:"endGroup"})
-    
-/*reify.defineVerb=function defineVerb(...verbs) //defineVerb("connect on through","connect to") -- "connect to" is verb + particle
-	{
-		if (verbs.length>0)
-		{
-			let predicate={}
-			let p =verbs[0].split(/\s+/)
-			p.forEach(word=>{predicate[word]=null}) //predicate prototype for building facts.
-			p.slice(1).forEach(preposition=>{reify.glossary.register(preposition).as({id:preposition, part:"preposition"})})
-			let root=reify.formatId(p[0]) 
-			verbs[0]=reify.formatName(p[0]) 
-			verbs.forEach((verb)=>
-			{
-				let particle
-				[verb,particle]=verb.split(/\s+/)
-				particle=particle?" "+particle:""
-				reify.glossary.register(verb+particle).as({id:root, tense:reify.tense.imperative, predicate:predicate, part:"verb"})
-				reify.glossary.register(verb+particle).as({id:root, tense:reify.tense.present, predicate:predicate, part:"verb"})
-				reify.glossary.register(reify.lang.es(verb)+particle).as({id:root, tense:reify.tense.present, predicate:predicate, part:"verb"})
-				reify.glossary.register(reify.lang.ed(verb)+particle).as({id:root, tense:reify.tense.past, predicate:predicate, part:"verb"})
-				reify.glossary.register(reify.lang.en(verb)+particle).as({id:root, tense:reify.tense.perfect, predicate:predicate, part:"verb"})
-			})
-		}
-		return this
-	}
-	reify.definePreposition=function definePreposition(...prepositions)
-	{
-		prepositions.forEach((preposition)=>
-		{
-			reify.glossary.register(preposition).as({id:preposition, part:"preposition"})
-		})
-		return this
-	}*/
 
-//#endregion
 
-// #region grammar
-
-reify.grammar.command=reify.Syntax()
-
-reify.grammar.nounPhrase=reify.Syntax()
-    .snip("article").snip("adjectives").snip("noun").snip("adjunct").snip("conjunct")
-
-reify.grammar.nounPhrase.article.configure({minimum:0, filter:(definition)=>definition?.part==="article"})
-
-reify.grammar.nounPhrase.adjectives.configure({minimum:0, maximum:Infinity, separator:/^\s*,?and\s+|^\s*,\s*|^\s+/, 
-    filter:(definition)=>definition?.part==="adjective"})
-reify.grammar.nounPhrase.noun.filter=(definition)=>definition?.part==="noun"
-
-reify.grammar.nounPhrase.adjunct
-    .configure({minimum:0})
-    .snip("relation").snip("nounPhrase",reify.grammar.nounPhrase)
-    
-reify.grammar.nounPhrase.adjunct.relation.configure({filter:(definition)=>definition?.part==="relation"})
-
-reify.grammar.nounPhrase.conjunct
-    .configure({minimum:0})    
-    .snip("conjunction").snip("nounPhrase",reify.grammar.nounPhrase)
-reify.grammar.nounPhrase.conjunct.conjunction.configure({filter:(definition)=>definition?.part==="conjunction"})
-
-reify.grammar.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
-reify.grammar.command.snip("subject",reify.grammar.nounPhrase.clone()).snip("verb").snip("object")
-reify.grammar.ioPhrase=reify.Syntax().configure({mode:reify.Syntax.any})
-    .snip(1)
-    .snip(2)
-reify.grammar.ioPhrase[1].snip("target",reify.grammar.nounPhrase)    
-reify.grammar.ioPhrase[2].snip("command",reify.grammar.command)
-
-reify.grammar.indirect=reify.Syntax().configure({minimum:0})
-    .snip("preposition",reify.grammar.preposition).snip("phrase",reify.grammar.ioPhrase)
-
-reify.grammar.command.subject.configure({minimum:0 })
-
-reify.grammar.command.subject.noun.configure({separator:/^\s*,\s*|^\s+/})
-
-reify.grammar.command.verb.configure({filter: (definition)=>definition.part==="verb"})
-
-reify.grammar.command.object=reify.Syntax()
-.configure({minimum:0, mode:reify.Syntax.any})
-.snip(1)  //verbalParticle(required)/direct/indirect
-.snip(2)  //direct/verbal particle(optional)/indirect
-.snip(3)  //indirect/direct
-
-reify.grammar.command.object[1].snip("verbalParticle").snip("direct",reify.grammar.nounPhrase).snip("indirect",reify.grammar.indirect)
-reify.grammar.command.object[2].snip("direct",reify.grammar.nounPhrase).snip("verbalParticle").snip("indirect",reify.grammar.indirect)
-reify.grammar.command.object[3].snip("indirect",reify.grammar.nounPhrase).snip("direct",reify.grammar.nounPhrase)
-
-reify.grammar.command.object[1].verbalParticle.configure({filter:(definition)=>definition.part==="particle"})
-reify.grammar.command.object[2].verbalParticle.configure({minimum:0,filter:(definition)=>definition.part==="particle"})
-
-reify.grammar.nounPhrase.semantics=(interpretation)=>
-{
-    var gist=interpretation.gist
-    gist.select=new reify.Cord((...args)=>
-    {
-        var cord=gist.noun.definition.select(...args)
-        if (gist.adjectives)
-        {
-            gist.adjectives.forEach(adjective=>
-            {
-				cord=adjective.definition.select(cord)
-            })
-        }
-        if(gist.adjunct)
-        {
-            cord=gist.adjunct.nounPhrase.select(...args).cross(cord)
-                .per((adjunct,noun)=>noun.entwine({ply:adjunct.ply,via:gist.adjunct.relation.definition.cord}).aft)
-        } 
-        if (gist.conjunct)
-        {
-            cord=cord.add(gist.conjunct.nounPhrase.select(...args)).disjoint
-        }
-        return cord  
-    })
-    return interpretation
-}
-reify.grammar.command.subject.semantics=reify.grammar.nounPhrase.semantics
-reify.grammar.command.semantics=(interpretation)=>
-{
-    var valence=interpretation.gist.verb.definition.valence
-	var vPreposition=interpretation.gist.verb.definition.preposition
-    var vParticle=interpretation.gist.verb.definition.particle
-    if (valence ===0 && interpretation.gist.hasOwnProperty("object")){return false}
-    if (valence ===1 && (interpretation.gist.object?.hasOwnProperty("indirect") || !interpretation.gist.object?.hasOwnProperty("direct"))){return false}
-    if (valence ===2 && (!interpretation.gist.object?.hasOwnProperty("indirect") || !interpretation.gist.object?.hasOwnProperty("direct"))){return false}
-    if(vPreposition)
-    {
-        if (!(interpretation.gist.object?.indirect?.preposition?.definition.select===vPreposition))
-        {
-            return false
-        }
-    }
-    else
-    {
-        if (interpretation.gist.object?.indirect?.hasOwnProperty("preposition"))
-        {
-            return false
-        }
-    }
-    if (vParticle)
-    {
-        if (!(interpretation.gist.Object?.verbalParticle?.definition.select===vParticle))
-        {
-            return false
-        }
-    }
-    else
-    {
-        if (interpretation.gist.Object?.verbalParticle?.hasOwnProperty("verbalParticle"))
-        {
-            return false
-        }
-    }
-
-	var command={lexeme:interpretation.gist.lexeme}
-	if (interpretation.gist.hasOwnProperty("subject"))
-	{
-		command.subject=interpretation.gist.subject.select
-		command.subject.lexeme=	interpretation.gist.subject.lexeme	
-	}
-	command.verb=interpretation.gist.verb.definition.select
-	command.verb.lexeme=interpretation.gist.verb.lexeme
-	if (interpretation.gist.object?.hasOwnProperty("direct"))
-	{
-		command.direct=interpretation.gist.object.direct.select
-		command.direct.lexeme=interpretation.gist.object.direct.lexeme
-	}
-    if (interpretation.gist.object?.hasOwnProperty("indirect"))
-    {
-		if (interpretation.gist.object.indirect.hasOwnProperty("preposition"))
-		{
-			command.preposition=interpretation.gist.object.indirect.preposition.definition.select
-	//		command.preposition.lexeme=interpretation.gist.object.indirect.preposition.lexeme
-		}
-		command.indirect=interpretation.gist.object.indirect.phrase.target?.select ?? interpretation.gist.object.indirect.phrase.command
-		command.indirect.lexeme=interpretation.gist.object.indirect.phrase.lexeme
-    }
-
-	Object.assign(interpretation.gist,{command:command})
-	return true
-}
-
-reify.parser=reify.Parser({ lexicon: reify.glossary, grammar: reify.grammar.command})
-// #endregion
 // #region enumerations
 reify.lang.degree={positive:0,comparative:1,superlative:2}
 reify.lang.number={singular:0,plural:1}
@@ -1089,3 +894,170 @@ reify.Passage.prototype.inflect=function (...verb)
 // #endregion
 // #endregion
 
+// #region glossary
+reify.glossary
+	//.register("the", "a", "an","some").as({ part: "article" })
+
+    .register("when").as({ key:"when", part: "trigger" })
+    .register("whenever").as({key:"whenever", part: "trigger" })
+    .register("while").as({key:"while", part: "trigger" })
+    .register("or").as({ part: "unionOperator" })
+    .register("or all").as({ part: "unionAllOperator" })
+    .register("and").as({ part: "intersectionOperator" })
+    .register("and all").as({ part: "intersectionAllOperator" })
+    .register("except").as({ part: "differenceOperator" })
+    .register("(").as({part:"beginGroup"})
+    .register(")").as({part:"endGroup"})
+
+// reify.predicate`revise`  DEFECT how are we doing numerical values
+
+
+//#endregion
+// #region grammar
+
+reify.grammar.command=reify.Syntax()
+
+reify.grammar.nounPhrase=reify.Syntax()
+    .snip("article").snip("adjectives").snip("noun").snip("adjunct").snip("conjunct")
+
+reify.grammar.nounPhrase.article.configure({minimum:0, filter:(definition)=>definition?.part==="article"})
+
+reify.grammar.nounPhrase.adjectives.configure({minimum:0, maximum:Infinity, separator:/^\s*,?and\s+|^\s*,\s*|^\s+/, 
+    filter:(definition)=>definition?.part==="adjective"})
+reify.grammar.nounPhrase.noun.filter=(definition)=>definition?.part==="noun"
+
+reify.grammar.nounPhrase.adjunct
+    .configure({minimum:0})
+    .snip("relation").snip("nounPhrase",reify.grammar.nounPhrase)
+    
+reify.grammar.nounPhrase.adjunct.relation.configure({filter:(definition)=>definition?.part==="relation"})
+
+reify.grammar.nounPhrase.conjunct
+    .configure({minimum:0})    
+    .snip("conjunction").snip("nounPhrase",reify.grammar.nounPhrase)
+reify.grammar.nounPhrase.conjunct.conjunction.configure({filter:(definition)=>definition?.part==="conjunction"})
+
+reify.grammar.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
+reify.grammar.command.snip("subject",reify.grammar.nounPhrase.clone()).snip("verb").snip("object")
+reify.grammar.ioPhrase=reify.Syntax().configure({mode:reify.Syntax.any})
+    .snip(1)
+    .snip(2)
+reify.grammar.ioPhrase[1].snip("target",reify.grammar.nounPhrase)    
+reify.grammar.ioPhrase[2].snip("command",reify.grammar.command)
+
+reify.grammar.indirect=reify.Syntax().configure({minimum:0})
+    .snip("preposition",reify.grammar.preposition).snip("phrase",reify.grammar.ioPhrase)
+
+reify.grammar.command.subject.configure({minimum:0 })
+
+reify.grammar.command.subject.noun.configure({separator:/^\s*,\s*|^\s+/})
+
+reify.grammar.command.verb.configure({filter: (definition)=>definition.part==="verb"})
+
+reify.grammar.command.object=reify.Syntax()
+.configure({minimum:0, mode:reify.Syntax.any})
+.snip(1)  //verbalParticle(required)/direct/indirect
+.snip(2)  //direct/verbal particle(optional)/indirect
+.snip(3)  //indirect/direct
+
+reify.grammar.command.object[1].snip("verbalParticle").snip("direct",reify.grammar.nounPhrase).snip("indirect",reify.grammar.indirect)
+reify.grammar.command.object[2].snip("direct",reify.grammar.nounPhrase).snip("verbalParticle").snip("indirect",reify.grammar.indirect)
+reify.grammar.command.object[3].snip("indirect",reify.grammar.nounPhrase).snip("direct",reify.grammar.nounPhrase)
+
+reify.grammar.command.object[1].verbalParticle.configure({filter:(definition)=>definition.part==="particle"})
+reify.grammar.command.object[2].verbalParticle.configure({minimum:0,filter:(definition)=>definition.part==="particle"})
+
+reify.grammar.nounPhrase.semantics=(interpretation)=>
+{
+    var gist=interpretation.gist
+    gist.select=new reify.Cord((...args)=>
+    {
+        var cord=gist.noun.definition.select(...args)
+        if (gist.adjectives)
+        {
+            gist.adjectives.forEach(adjective=>
+            {
+				cord=adjective.definition.select(cord)
+            })
+        }
+        if(gist.adjunct)
+        {
+            cord=gist.adjunct.nounPhrase.select(...args).cross(cord)
+                .per((adjunct,noun)=>noun.entwine({ply:adjunct.ply,via:gist.adjunct.relation.definition.cord}).aft)
+        } 
+        if (gist.conjunct)
+        {
+            cord=cord.add(gist.conjunct.nounPhrase.select(...args)).disjoint
+        }
+        return cord  
+    })
+    return interpretation
+}
+reify.grammar.command.subject.semantics=reify.grammar.nounPhrase.semantics
+reify.grammar.command.semantics=(interpretation)=>
+{
+    var valence=interpretation.gist.verb.definition.valence
+	var vPreposition=interpretation.gist.verb.definition.preposition
+    var vParticle=interpretation.gist.verb.definition.particle
+    if (valence ===0 && interpretation.gist.hasOwnProperty("object")){return false}
+    if (valence ===1 && (interpretation.gist.object?.hasOwnProperty("indirect") || !interpretation.gist.object?.hasOwnProperty("direct"))){return false}
+    if (valence ===2 && (!interpretation.gist.object?.hasOwnProperty("indirect") || !interpretation.gist.object?.hasOwnProperty("direct"))){return false}
+    if(vPreposition)
+    {
+        if (!(interpretation.gist.object?.indirect?.preposition?.definition.select===vPreposition))
+        {
+            return false
+        }
+    }
+    else
+    {
+        if (interpretation.gist.object?.indirect?.hasOwnProperty("preposition"))
+        {
+            return false
+        }
+    }
+    if (vParticle)
+    {
+        if (!(interpretation.gist.Object?.verbalParticle?.definition.select===vParticle))
+        {
+            return false
+        }
+    }
+    else
+    {
+        if (interpretation.gist.Object?.verbalParticle?.hasOwnProperty("verbalParticle"))
+        {
+            return false
+        }
+    }
+
+	var command={lexeme:interpretation.gist.lexeme}
+	if (interpretation.gist.hasOwnProperty("subject"))
+	{
+		command.subject=interpretation.gist.subject.select
+		command.subject.lexeme=	interpretation.gist.subject.lexeme	
+	}
+	command.verb=interpretation.gist.verb.definition.select
+	command.verb.lexeme=interpretation.gist.verb.lexeme
+	if (interpretation.gist.object?.hasOwnProperty("direct"))
+	{
+		command.direct=interpretation.gist.object.direct.select
+		command.direct.lexeme=interpretation.gist.object.direct.lexeme
+	}
+    if (interpretation.gist.object?.hasOwnProperty("indirect"))
+    {
+		if (interpretation.gist.object.indirect.hasOwnProperty("preposition"))
+		{
+			command.preposition=interpretation.gist.object.indirect.preposition.definition.select
+	//		command.preposition.lexeme=interpretation.gist.object.indirect.preposition.lexeme
+		}
+		command.indirect=interpretation.gist.object.indirect.phrase.target?.select ?? interpretation.gist.object.indirect.phrase.command
+		command.indirect.lexeme=interpretation.gist.object.indirect.phrase.lexeme
+    }
+
+	Object.assign(interpretation.gist,{command:command})
+	return true
+}
+
+reify.parser=reify.Parser({ lexicon: reify.glossary, grammar: reify.grammar.command})
+// #endregion
