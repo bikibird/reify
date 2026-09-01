@@ -14,6 +14,7 @@ https://reify-fiction.org
 */
 
 const reify =function reify(literals, ...expressions) {return new reify.classes.entity(literals,...expressions)}
+reify.classes={}
 reify.past=0 //I ATE
 reify.present=1 //I EAT
 reify.progressive=2 //I AM EATING
@@ -917,246 +918,24 @@ reify.Syntax.prototype.snip =function(key,rule)
 }
 // #endregion
 // #region Passage
-
-reify.Passage =class Passage
+reify.classes.Passage =class Passage
 {
-	constructor(...precursor) 
+	constructor(...items) 
 	{
 		Object.defineProperty(this,"id",{value:"",writable:true})
-		Object.defineProperty(this,"echo",{value:false,writable:true})
-		Object.defineProperty(this,"ended",{value:false,writable:true})
-		// Object.defineProperty(this,"_locked",{value:false,writable:true})  Not used anywhere
-		Object.defineProperty(this,"_erasable",{value:false,writable:true})
+        Object.defineProperty(this,"scene",{value:null,writable:true})
+        Object.defineProperty(this,"mise",{value:false,writable:true})
+		Object.defineProperty(this,"prefix",{value:[],writable:true})
 		Object.defineProperty(this,"passages",{value:[],writable:true})
-		Object.defineProperty(this,"re",{value:false,writable:true})
-		Object.defineProperty(this,"_property",{value:"",writable:true})
-		Object.defineProperty(this,"_results",{value:[],writable:true})
-		Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
-		Object.defineProperty(this,"_tag",{value:"",writable:true})
-		Object.defineProperty(this,"tags",{value:{},writable:true})
+		Object.defineProperty(this,"results",{value:[],writable:true})
+		//Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
+        Object.defineProperty(this,"suffix",{value:[],writable:true})
 		Object.defineProperty(this,"text",{value:"",writable:true})
-		this.fill(...precursor)
-		this.catalog()
-		return new Proxy(this, reify.Passage.__handler)
-	}
-	get also()  //Joins second passage if first passage generates non empty string
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class alsoPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results=this.passages[0].generate()
-				if (results.length>1 || (results.length===1 && results[0].value!==""))
-				{
-					this.results=results.concat(this.passages[1].generate())
-					this.text=this.toString()
-				}
-				else
-				{
-					this.results=results
-					this.text=""
-				}
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	get when()
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class whenPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				this.passages[1].generate()
-				if (this.passages[1].text)
-				{
-					this.passages[0].generate()
-					this.text=this.passages[0].text + this.passages[1].text
-					this.results=[{value:this.text}]
-				}
-				else
-				{
-					this.results=[{value:""}]
-					this.text=""
-				}
+		this.fill(...items)
 
-				return this.results
-			}
-		},reify.template.__handler)
+		return this
 	}
-	get _() //joins two passages without space
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				super.generate()
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	get spc()  //joins two passages with space
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spcPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results1=this.passages[0].generate()
-				var results2=this.passages[1].generate()
-				if (
-					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
-					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
-				){var space=" "}
-				else{var space=""}
-				
-				this.results=results1.concat([{value:space}],results2)
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	get spc1()  //joins 2 passages with space  if first passage generates non-empty string. 
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spc1Passage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results1=this.passages[0].generate()
-				var results2=this.passages[1].generate()
-				if (
-					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
-					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
-				) {this.results=results1.concat([{value:" "}],results2)}
-				else {this.results=results1}
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	get spc2()  //joins 2 passages with space  if and only if both passages generate non-empty strings. 
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spc2Passage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results1=this.passages[0].generate()
-				var results2=this.passages[1].generate()
-				if (
-					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
-					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
-				) {this.results=results1.concat([{value:" "}],results2)}
-				else {this.results=[{value:""}]}
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	get comma()  //joins two passages with , or space
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results1=this.passages[0].generate()
-				var results2=this.passages[1].generate()
-				if (
-					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
-					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
-				){var space=", "}
-				else{var space=" "}
-				
-				this.results=results1.concat([{value:space}],results2)
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-
-	get comma2()  //joins two passages with , or period
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class spacePassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results1=this.passages[0].generate()
-				var results2=this.passages[1].generate()
-				if (
-					(results1.length>1 || (results1.length===1 && results1[0].value!=="")) &&
-					(results2.length>1 || (results2.length===1 && results2[0].value!==""))
-				){var space=", "}
-				else{var space=". "}
-				
-				this.results=results1.concat([{value:space}],results2)
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-
+	
 	append(documentSelector)
 	{
 		if (documentSelector)
@@ -1166,364 +945,15 @@ reify.Passage =class Passage
 		}	
 		return this
 	}
-	catalog()
-	{
-		this._catalogUp()
-		this._catalogDown()
-		return this
-	}
-	_catalogUp() //add child tags and this tag to this's tags 
-	{
-		if (this.id)
-		{
-			this.tags[this.id]=this  //Add this to its own tags
-		}
-		this.passages.forEach(passage=> 
-		{
-			if (passage instanceof reify.Passage )
-			{
-				var tags= passage._catalogUp()  // recursive catalog for sub passages
-				Object.keys(tags).forEach(key=>
-				{
-					if(!this.tags[key])
-					{
-						this.tags[key]=tags[key] //add sub passages to this's tags
-					} 
-				})
-			}
-		})
-		return this.tags
-	}
-	_catalogDown()
-	{
-		this.passages.forEach(passage=>
-		{
-			if (passage instanceof reify.Passage)
-			{
-				Object.keys(this.tags).forEach(key=>
-				{
-					if (!passage.tags[key])
-					{
-						passage.tags[key]=this.tags[key]  //add selfs tags to sub passages
-					}	
-					passage._catalogDown()  //recursively
-				})
-			}	
-		})
-	}
-
-//There are three different ways to specify a condition.
-//Concur should work like then  _.hobby.concur.person.interest
-	concur(tag,condition)
-	{
-		if (typeof condition ==="function"){var rule=condition} //rule defined by function that returns boolean
-		else 
-		{
-			if (condition){var rule = (a,b)=>b.map(item=>item[condition]).includes(a[condition])} 
-			else {var rule = (a,b)=>b.map(item=>item.value).includes(a.value)}
-		}
-		return new class concurPassage extends reify.Passage
-		{
-			generate()
-			{
-				super.generate()
-				this.results=this.results.filter(item=>rule(item,this.tags[tag].results))
-				this.text=this.toString()
-				return this.results
-			}
-		}(this)
-	}
-
-	first(count=1)
-	{
-		return new class firstPassage extends reify.Passage
-		{
-			generate()
-			{
-				super.generate()
-				var total=this.results.length
-				this.results=this.results.slice(0,count)
-				var subtotal=this.results.length
-				this.results.forEach((result,index)=>
-				{
-					result.index=index
-					result.rank=index+1
-					result.subtotal=subtotal
-					result.total=total
-				})
-				this.text=this.toString
-				return this.results
-			}
-		}(this)
-	}
-	erase(...tags)
-	{
-		var erasures=tags.flat()
-		if (erasures.length===0){erasures=Object.keys(this.tags)}
-		erasures.forEach(erasure=>{if (this.tags[erasure]._erasable){this.tags[erasure].passages=[]}})
-		return this
-	}
-	generate(passages=this.passages)
-	{
-		this.results=[]
-		passages.forEach((passage)=>
-		{
-			if (passage.generate) 
-			{
-				this.results=this.results.concat(passage.generate())
-			}
-			else
-			{
-				if(Object.getPrototypeOf(passage)===Object.prototype)
-				{
-					if(passage.hasOwnProperty("value"))
-					{
-						if (passage.value.generate){this.results=this.results.concat(passage.value.generate())}
-						else{this.results=this.results.concat(passage)}
-					}
-					else
-					{
-						var values=Object.values(passage)
-						if (values.length>0)
-						{
-							if (values[0].generate){this.results=this.results.concat(values[0].generate())}
-							else{this.results.push(Object.assign({value:values[0]},passage))}
-						}
-						else 
-						{
-							this.results.push({value:""})
-						}
-					}
-				}
-				else
-				{
-					this.results.push({value:passage})
-				}
-			}
-		})
-		this.text=this.toString()
-		return this.results
-	}
-	htmlTemplate()
-	{
-		var template = document.createElement("template")
-		template.innerHTML = this.text
-		return template
-	}
-	get inner()
-	{
-		if (this.passages.length>0 && this.passages[0] instanceof reify.Passage)
-		{
-			return this.passages[0]
-		}
-		else
-		{
-			return this
-		}
-	}
-	join({separator=" ", trim=true}={})
-	{
-		return new class joinPassage extends reify.Passage
-		{
-			generate()
-			{
-				super.generate()
-				var last=this.results.length-1
-				this.text=this.results.map(item=>item.value).reduce((result,passage,index,)=>result+passage+((index===last && trim)?"":separator),"")	
-				if (this.text){this.results=[{value:this.text}]}
-				return this.results
-			}
-		}(this)
-	}
-	last(count=1)
-	{
-		return new class lastPassage extends reify.Passage
-		{
-			generate()
-			{
-				super.generate()
-				var total=this.results.length
-				this.results=this.results.slice(-count)
-				var subtotal=this.results.length
-				this.results.forEach((result,index)=>
-				{
-					result.index=index
-					result.rank=index+1
-					result.subtotal=subtotal
-					result.total=total
-				})
-				return this.results
-			}
-		}(this)
-	}
-	get match()
-	{
-		var thisPassage=this
-		return new Proxy((precursor) => new class matchPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=thisPassage  //hobbies
-				this.passages[1]=precursor  //person
-				this.catalog()
-			}
-			generate()
-			{
-				var a=this.passages[0].generate()
-				var b= this.passages[1].generate()
-				this.results=a.filter(a=>b.map(item=>item.value).includes(a.value))
-				this.text=this.toString()
-				return this.results
-			}
-		},reify.template.__handler)
-	}
-	//Unlike expand, modify takes a function to be applied to each of this passages results.
-	modify(modifier,...data)
-	{
-		if(data.length>0)
-		{
-			if(data.length===1 && data[0] instanceof reify.Passage){var target=data[0]}
-		}
-		else {var target=this}
-		return new class modifyPassage extends reify.Passage
-		{
-			constructor()
-			{
-				if (target){super(target)}
-				else{super(...data)}
-			}
-			generate()
-			{
-				super.generate()
-				this.results=this.results.map(item=>
-				{
-					var modifiedPassage=Object.assign({},item)
-					return Object.assign(modifiedPassage,{value:modifier(item)})
-				})	
-				this.text=this.toString()
-				return this.results
-			}
-		}()
-	}
-	slot(rank)
-	{
-		return new class slotPassage extends reify.Passage
-		{
-			constructor(primaryPassage)
-			{
-				super(primaryPassage,rank)
-				this.catalog()
-			}
-			generate()
-			{
-				super.generate()
-				var rank=parseInt(this.passages[1])
-				this.results=[Object.assign({index:rank-1 ,rank:rank ,total:this.results[0].length},this.results[rank-1])]
-				this.text=this.toString()
-				return this.results
-			}
-		}(this)
-	}
-	transform(transformer,...data)
-	{
-		if(data.length>0)
-		{
-			if(data.length===1 && data[0] instanceof reify.Passage){var target=data[0]}
-		}
-		else {var target=this}
-	
-		return new class transformPassage extends reify.Passage
-		{
-		constructor()
-			{
-				if (target){super(target)}
-				else{super(...data)}
-		
-			}
-
-			generate()
-			{
-				this.results=transformer(super.generate().slice(0).map(item=>Object.assign({},item)))
-				this.text=this.toString()
-				return this.results
-			}
-		}()
-	}
-	//_`${_.pick.animal()} `.per.ANIMAL("cat","dog","frog")
-	get per()
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class perPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				if (precursor.length === 1 && precursor[0] instanceof reify.Passage){this.passages[1]=precursor[0]}
-				else(this.passages[1]= new reify.Passage(...precursor))
-				this.catalog()
-				
-			}
-			generate()
-			{
-				this.results=[]
-				for (let index = 0; index < this.passages[1].generate().length; index++) {
-					this.results=this.results.concat(this.passages[0].generate())
-				}
-				this.text=this.toString()
-				return this.results	
-			}
-		},reify.template.__handler)
-	}
-	//fill figures out the core passage to fill
+    //fill figures out the core passage to fill
 	//_fill formats data and assigns to passages array.
-	//DEFECT: Do we need to catalog after filling?
-	fill(...items)
-	{
-		if (items.length===1 && Object.getPrototypeOf(items[0])===Object.prototype)  //Might be POJO destined for tagged passages.
-		{
-			if (!items[0]._tagPassage)
-			{
-				this.erase()
-				Object.keys(items[0]).forEach(key=>
-				{
-					if (this.tags.hasOwnProperty(key))
-					{
-						this.tags[key]._erasable=true
-						this.tags[key].fill({_tagPassage:true,_data:items[0][key]}) 
-					}
-				})
-				//this.catalog()
-				return this	
-			}
-
-		}
-		if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)  //send items down to the core passage
-		{
-			this.passages[0].fill(...items)
-			//this.catalog()
-			return this	
-
-		}
-		//We're at the core so update passage array with items.
-
-
-		if(!(items[0]===undefined) && (Object.getPrototypeOf(items[0])===Object.prototype && items[0]?._tagPassage))
-		{
-			this._fill(items[0]._data)
-		}
-		else {this._fill(...items)}
-		//this.catalog()
-		return this 
-	}
-	_fill(literals, ...expressions)
+    fill(literals, ...expressions)
 	{
 		var data=[]
 		if (literals !== undefined)
 		{
 			var index=1
-			if( literals.hasOwnProperty("raw"))
+			if( literals.hasOwnProperty("raw")) //template literal passed in 
 			{
 				if (expressions.length===0)  //_`blah`
 				{
@@ -1598,6 +1028,55 @@ reify.Passage =class Passage
 		}	
 		return this
 	}
+	//console.log(_.scene`hello, ${_.something.name()}. `)
+	generate(row)
+	{
+        let loop=1,results=[],entity
+        if (this.mise) loop=this.scene.mise.length
+        for(let i=0;i<loop;i++)
+        {
+            if (this.mise) row=this.scene.mise[i].entity
+            if (this.entity)
+            {
+                entity=row[this.entity]
+                if (this.attribute) results.push(entity[this.attribute])
+                else results.push(entity.name)
+            }
+            else
+            {
+                this.passages.forEach((passage)=>
+                {
+                    if (passage.generate) 
+                    {
+                        this.results=this.results.concat(passage.generate(row))
+                    }
+                    else 
+                    {
+                        this.results.push((passage).toString())
+                    }
+                })
+            }
+            this.prefix.forEach(prefix=>
+            {
+                this.results= prefix(this.results,entity)
+            })
+
+            this.suffix.forEach(suffix=>
+            {
+                this.results = suffix(this.results,entity)
+            })
+        }
+        
+		this.text=this.results.toString()
+		return this.results
+	}
+	
+	htmlTemplate()
+	{
+		var template = document.createElement("template")
+		template.innerHTML = this.text
+		return template
+	}
 	prepend(documentSelector)
 	{
 		if (documentSelector)
@@ -1625,7 +1104,7 @@ reify.Passage =class Passage
 	{ 
 		this.passages.forEach(passage=>
 		{
-			if(passage instanceof reify.Passage){passage.reset()}	
+			if(passage instanceof reify.classes.Passage){passage.reset()}	
 		})
 		return this
 	}
@@ -1633,7 +1112,7 @@ reify.Passage =class Passage
 	set results(value){this._results=value}
 	say(seed) 
 	{
-		if (seed>=0){this.seed(seed)}
+		//if (seed>=0){this.seed(seed)}
 		this.generate()
 		return this
 	}
@@ -1647,86 +1126,23 @@ reify.Passage =class Passage
 		}
 		this.passages.forEach(passage=>
 		{
-			if(passage instanceof reify.Passage)
+			if(passage instanceof reify.classes.Passage)
 			{
 				passage.seed(reify.util.random(this._seed).seed)
 			}	
 		})
 		return this
 	}
-	tag(id)
-	{
-		this.id=id
-		this.catalog()
-		return this
-	}
-	/*lock(id) //not used anywhere
-	{
-		this._locked=true
-		return this
-	}*/
-	get then()
-	{
-		var primaryPassage=this
-		return new Proxy((...precursor) => new class thenPassage extends reify.Passage
-		{
-			constructor()
-			{
-				super()
-				this.passages[0]=primaryPassage
-				this.passages[1]=new reify.Passage(...precursor)
-				this.catalog()
-			}
-			generate()
-			{
-				var results=this.passages[0].generate()
-				if (results.length>1 || (results.length===1 && results[0].value!==""))
-				{
-					this.results=results
-					this.text=this.passages[0].text
-				}
-				else
-				{
-					this.results=this.passages[1].generate()
-					this.text=this.passages[1].text
-				}
-				return this.results
-			}
-		},reify.template.__handler)
-	}
+    setScene(scene)
+    {
+        this.scene=scene
+        this.passages.forEach(passage=>
+        {
+            if(passage instanceof reify.classes.Passage) passage.setScene(scene)
+        })
+        return this
+    }
 	
-
-	//Unlike modify, expand takes a passage factory and applies the results of this passage to it.
-	expand(passageFactory)
-	{
-		var thisPassage=this
-		return new class expandPassage extends reify.Passage
-		{
-			generate()
-			{
-				this.results=thisPassage.generate()
-				this.text=this.toString()
-				if (this.text)
-				{
-					if(this.results.length===1 && this.results[0].value instanceof Array)
-					{
-						this.results=passageFactory(this.results[0].value).generate().map(item=>Object.assign({},item))	
-					}
-					else
-					{
-						this.results=passageFactory(this.results).generate().map(item=>Object.assign({},item))
-					}
-					this.text=this.toString()
-				}
-				else 
-				{
-					this.results=[]
-					this.text=""
-				}
-				return this.results
-			}
-		}(this)
-	}
 	toString()
 	{
 		return this.results.map(result=>
@@ -1746,651 +1162,57 @@ reify.Passage =class Passage
 	}
 	
 }
-reify.Passage.define=function(id)
-{
-	var as= (passageFactory)=>
-	{
-		Object.defineProperty(reify.Passage.prototype,id,
-		{
-			get()
-			{
-				return passageFactory(this)
-			}
-		})
-	}
-	return {as:as}	
-}
-reify.Passage.__handler=
-{
-	get: function(target, property, receiver) 
-	{
-		if (Reflect.has(target,property,receiver)) 
-		{
-			return Reflect.get(target,property,receiver)
-		}
-		else 
-		{
-		//	if (property.toUpperCase()===property) 
-            if (property.startsWith("$")) 
-			{
-				//return new reify.Passage(target).tag(property.toLowerCase())
-                return new reify.Passage(target).tag(property.slice(1))
-			}
-			else
-			{
-				if(target.constructor.name==="siblingPassage"){return reify.template.child(target,property)}
-				else{return reify.template.sibling(target,property)}
-			}
-		}
-	}	
-}
 
-// #endregion
-// #region Template
-reify.template={}
-reify.template.__handler=
+reify.prefixProxy=
 {
-	 //_.a.b.c() becomes _.a(b(c()))
-	 //_.a.b.c.TAG() becomes _.a(b(c())) c() is tagged
-	 //_.a.TAG.b.c() becomes _.a(b(c())) b(c()) is tagged
-	 //_.a.b.tag becomes _.a(b(echo(tag)))
-	 //_.a.b.tag.data1 becomes _.a(b(data1(echo(tag)))))
-	 //_.a.b.tag.data1.data2 becomes _.a(b(data2(data1(echo(tag)))))
-	 //_.a.tags.b becomes 
-	 //_.a.cap.pick("cat","dog","frog")
-	 //t=>_.a.cap(t.term.description.z)
+	get: function(target, property,receiver) 
+	{
+        if (target.erstatz) //another prefix to process
+        {
+            if (property="scene") target.mise=true
+            else if (reify.prefix[property]) target.prefix.unshift(reify.prefix[property])
+            else if (!target.entity)target.entity=property
+            else target.attribute=property
+            return receiver
+        }
+       
+        else //first prefix
+        {
 
-	//if template[asFunction] is undefined, property refers to a tagged passage.
-	get:function(template, property,receiver)
-	{
-		//template is function that returns a passage
-		if (property==="asFunction")
-		{
-			return template	 
-		}
-		//_.a.b.c() becomes _.a(b(c()))
-		if (reify.template.hasOwnProperty(property)) //property is a template
-		{
-			return new Proxy
-			(
-				function(...precursor)
-				{
-					return template(reify.template[property].asFunction(...precursor))
-				},		
-				reify.template.__handler
-			)
-		}
-		//_.a.b.c.$tagName() becomes _.a(b(c())) c() is tagged
-	 	//_.a.$tagName.b.c() becomes _.a(b(c())) b(c()) is tagged
-		//if (property.toUpperCase()===property)  //property is request to create a tagged passage
-        if (property.startsWith("$"))  //property is request to create a tagged passage
-		{
-			//var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.toLowerCase()))
-			//var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.toLowerCase())
-            var finalPassageFactory=(...precursor)=>template(new reify.Passage(...precursor).tag(property.slice(1)))
-			var priorPassageFactory=(...precursor)=> new reify.Passage(...precursor).tag(property.slice(1))
-			var handler=Object.assign(
-				{
-					wrapper:template,
-					prior:priorPassageFactory,
-					sibling:true //next property request for sibling
-				},
-				reify.template.__handler	
-			)
-			return new Proxy(finalPassageFactory,handler)
-		}
-		if (this.sibling)  //property is request for sibling passage
-		{
-			var finalPassageFactory=()=>this.wrapper(reify.template.sibling(this.prior(),property))
-			var priorPassageFactory=()=>reify.template.sibling(this.prior(),property)
-			var handler=Object.assign(
-				{
-					wrapper:this.wrapper,
-					prior:priorPassageFactory,
-					child:true  //next property request is for child
-				},
-				reify.template.__handler	
-			)
-			return new Proxy(finalPassageFactory,handler)			
-
-		}
-		if (this.child)
-		{
-			var finalPassageFactory=()=>this.wrapper(reify.template.child(this.prior(),property))
-			var priorPassageFactory=()=>reify.template.child(this.prior(),property)
-			var handler=Object.assign(
-				{
-					wrapper:this.wrapper,
-					prior:priorPassageFactory,
-					child:true  //all future property request are for children
-				},
-				reify.template.__handler	
-			)
-			return new Proxy(finalPassageFactory,handler)	
-		}
-		//property is neither request for child nor sibling; must be echo passage
-		var finalPassageFactory=()=>template(reify.template.echo(property))
-		var priorPassageFactory=()=>reify.template.echo(property)
-		var handler=Object.assign(
-			{
-				wrapper:template,
-				prior:priorPassageFactory,
-				sibling:true //next property request for sibling
-			},
-			reify.template.__handler	
-		)
-		return new Proxy(finalPassageFactory,handler)
-	}
-}
-
-reify.template.defineClass=function(id)
-{
-	var as= (passageClass)=>
-	{
-		reify.template[id]=new Proxy((...precursor)=>new passageClass(...precursor),reify.template.__handler)
-	}
-	return {as:as}	
-}
-reify.template.define=function(id)
-{
-	var as= (passageFactory)=>
-	{
-		reify.template[id]=new Proxy(passageFactory,reify.template.__handler)
-	}
-	return {as:as}	
-}
-reify.template._=new Proxy
-(
-	function _(...data)
-	{
-		if (data.length===1 && data[0] instanceof reify.Passage) return data[0]
-		else return new reify.Passage(...data)
-	}
-	,reify.template.__handler
-)
-reify.template.define("cycle").as((...data)=>
-{
-	var counter=0
-	return new class cyclePassage extends reify.Passage
-	{
-		fill(literals, ...expressions)
-		{
-			super.fill(literals, ...expressions)
-			counter=0
-			return this
-		}
-		generate()
-		{
-			var results=[]	
-			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
-			{
-				results=super.generate()
-				var total=this.results.length
-				results=results.slice(counter,counter+1)
-			}
-			else
-			{
-				var results=super.generate(this.passages.slice(counter,counter+1))
-				var total=this.passages.length
-			}
-			if (this.results.length===0)
-			{
-				this.results=[{value:"",index:0, rank:0, total:0,  reset:true}]
-				this.text=""
-				var total=0
-			}
-			else
-			{
-				Object.assign(results[0],{index:counter, rank:counter+1,total:total, reset:counter===total-1})
-				this.results=results
-				this.text=results[0].value
-			}	
-			counter++
-			if (counter===total || total===0)
-			{
-				counter=0
-				this.reset()
-			}
-			return this.results
-		}
-	}(...data)
-})
-reify.template.echo=function echo(tag)
-{
-	return new class echoPassage extends reify.Passage
-	{
-		constructor()
-		{
-			super()
-			if (tag instanceof reify.Passage){this.passages[0]=tag}
-			this.echo=true
-		}
-		generate()
-		{
-			if (this.passages.length===0){this.passages[0]=this.tags[tag]}
-
-			if (this.echo){this.results=this.passages[0].results}
-			else{this.results=this.passages[0].generate()}
-			this.text=this.toString()
-		//	this.tally=this.passages[0].value.tally
-			return this.results
-		}
-		get inner()
-		{
-			if (this.passages.length===0){var innerPassage= echo(this.tags[tag].inner)}
-			else {var innerPassage= echo(this.passages[0].inner)}
-			innerPassage.echo=this.echo
-			return innerPassage
-		}
-		get results()
-		{
-			if (this.passages.length===0){tag.results}
-			else {return super.results}
-		}
-		set results(value){this._results=value}
-	}()		
-}
-//_.blah.echo.data.data
-//_blah.data.data
-
-reify.template.sibling=function sibling(passage, property)
-{
-	return new class siblingPassage extends reify.Passage
-	{
-		constructor()
-		{
-			super()
-			this.passages[0]=passage
-		}
-		generate()
-		{
-			this.results=this.passages[0].generate()
-			if (this.results.length===1 && this.results[0][property].generate)
-			{
-				this.results= this.results[0][property].generate()
-			}
-			else
-			{	
-				this.results=this.results.map(result=>({value:result[property]}))
-			}	
-
-			this.text=this.toString()
-			return this.results
-		}
-	}()		
-}
-reify.template.define("child").as(function child(parent,property)
-{
-	return new class childPassage extends reify.Passage
-	{
-		constructor()
-		{
-			super()
-			this.passages[0]=parent
-		}
-		generate()
-		{
-			this.results=this.passages[0].generate()
-			if (this.results.length===1 && this.result[0].value[property].generate)
-			{
-				this.results= this.results[0].value[property].generate()
-			}
-			else
-			{	
-				this.results=this.results.map(result=>({value:result.value[property]}))
-			}
-			this.text=this.toString()
-			return this.results
-		}
-	}()		
-})
-reify.template.define("ante").as(function ante(outer)
-{
-	return new class antePassage extends reify.Passage
-	{
-		constructor()
-		{
-			super(outer)
-		}
-		generate()
-		{
-			var target=this.inner
-			this.results=target.generate()
-			this.text=target.text
-			return this.results
-		}
-
-		get inner()
-		{
-			var counter=0
-			var target=this
-			while (target.constructor.name === "antePassage")
-			{
-				counter++
-				target=target.passages[0] 
-			}
-			for (let i = 0; i <counter; i++)
-			{
-				target=target.inner
-			}	
-			return target
-		}
-	}()		
-})
-
-reify.template.defineClass("favor").as( class favorPassage extends reify.Passage
-{
-	generate()
-	{
-		if(this.passages.length===0)
-		{
-			this.text=""
-			this.results=[]
-			//this.tally++
-			return this.results
-		}
-		else
-		{
-			var {value:random,seed}=reify.util.random(this._seed)
-			this._seed=seed
-			
-			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
-			{
-				var results=super.generate()
-				var total=results.length
-				var c=total*(total+1)*random
-				var counter=total-Math.floor((Math.sqrt(1+4*c)-1)/2)-1
-				results=results.slice(counter,counter+1)
-			}
-			else
-			{
-				var total=this.passages.length
-				var c=total*(total+1)*random
-				var counter=total-Math.floor((Math.sqrt(1+4*c)-1)/2)-1
-				var results=super.generate(this.passages.slice(counter,counter+1))
-			}
-
-			results.forEach(passage=>
-			{
-				passage.index=counter
-				passage.rank=counter+1
-				passage.total=total
-			})
-			this.results=results
-			return this.results
-		}
-	}
+            const erstatzPassage =function(){}
+            erstatzPassage.erstatz=true
+            if (property="scene") erstatzPassage.mise=true
+            else if (reify.prefix[property]) erstatzPassage.prefix=[reify.prefix[property]]
+            else if (!erstatzPassage.entity)erstatzPassage.entity=property
+            else erstatzPassage.attribute=property
+            return new Proxy(erstatzPassage,reify.prefixProxy)
+        }
 	
-})
-reify.template.define("pick").as((...data)=>
+	},
+    apply: function(target, thisArg, args)
+    {
+        const passage=new reify.classes.Passage(args)    
+        passage.prefix=target.prefix ?? []
+        passage.mise=target.mise
+        return new Proxy(passage,reify.suffixProxy)
+    }
+}
+reify.suffixProxy=
 {
-	var previous
-	return new class pickPassage extends reify.Passage
+	get: function(target, property,receiver) 
 	{
-		generate()
-		{
-			if(this.passages.length===0)
-			{
-				this.text=""
-				this.results=[]
-				//this.tally++
-				return this.results
-			}
-			else
-			{
-				var {value:random,seed}=reify.util.random(this._seed)
-				this._seed=seed
-				if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
-				{
-					var results=super.generate()
-					var total=results.length
-					var counter=Math.floor(random*total)
-					if (counter===previous){counter =(counter+1)%total}
-					previous=counter
-					results=results.slice(counter,counter+1)
-				}
-				else
-				{
-					var total=this.passages.length
-					var counter=Math.floor(random*total)
-					if (counter===previous){counter =(counter+1)%total}
-					previous=counter
-					var results=super.generate(this.passages.slice(counter,counter+1))
-				}
-
-				results.forEach(passage=>
-				{
-					passage.index=counter
-					passage.rank=counter+1
-					passage.total=total
-				})
-				this.results=results
-				return this.results
-			}
-		}
-	}(...data)
-})
-reify.template.define("re").as((passage)=>
-{
-	passage.re=true
-	return passage
-})
-
-reify.template.define("cull").as((...precursor)=>
-{
-	return new class cullPassage extends reify.Passage
-	{
-		generate()
-		{
-			super.generate()
-			this.results=this.results.reduce((results,item)=>
-			{
-				if (item.value){ results.push(item)}
-				return results
-			},[])
-			return this.results
-		}
-	}(...precursor)
-})
-reify.template.define("refresh").as((...precursor)=>
-{
-	return new class refreshPassage extends reify.Passage
-	{
-		generate()
-		{
-			this.reset()
-			super.generate()
-			return this.results
-		}
-	}(...precursor)
-})
-reify.template.defineClass("roll").as( class rollPassage extends reify.Passage
-{
-	generate()
-	{
-		if(this.passages.length===0)
-		{
-			this.text=""
-			this.results=[]
-			//this.tally++
-			return this.results
-		}
-		else
-		{
-			var {value:random,seed}=reify.util.random(this._seed)
-			this._seed=seed
-			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
-			{
-				var results=super.generate()
-				var total=results.length
-				var counter=Math.floor(random*total)
-				results=results.slice(counter,counter+1)
-			}
-			else
-			{
-				var total=this.passages.length
-				var counter=Math.floor(random*total)
-				var results=super.generate(this.passages.slice(counter,counter+1))
-			}
-
-			results.forEach(passage=>
-			{
-				passage.index=counter
-				passage.rank=counter+1
-				passage.total=total
-			})
-			this.results=results
-			return this.results
-		}
-	}
-})
-reify.template.define("series").as((...data)=>
-{
-	var counter=0
-	return new class seriesPassage extends reify.Passage
-	{
-		fill(literals, ...expressions)
-		{
-			super.fill(literals, ...expressions)
-			this.ended=false
-			counter=0
-			return this
-		}
-		generate()
-		{
-			var results=[]	
-			if (this.passages.length===1 && this.passages[0] instanceof reify.Passage)
-			{
-				var results=super.generate()
-				var total=results.length
-				results=results.slice(counter,counter+1)
-			}
-			else
-			{
-				var results=super.generate(this.passages.slice(counter,counter+1))
-				var total=this.passages.length
-			}
-			if (this.ended || this.results.length===0 )
-			{
-				this.results=[{value:"",index:0, rank:0, total:0,  reset:true}]
-				this.text=""
-				var total=0
-			}
-			else
-			{
-				Object.assign(results[0],{index:counter, rank:counter+1,total:total})
-				this.results=results
-				this.text=results[0].value.toString()
-			}
-
-			counter++
-			if (counter===total)
-			{
-				this.ended=true
-				counter=0
-			}
-			return this.results
-		}
-		reset()
-		{
-			super.reset()
-			this.ended=false
-			counter=0
-			return this
-		}
-	}(...data)
-})
-reify.template.define("shuffle").as((...data)=>
-{
-	var reshuffle =true
-	return new class shufflePassage extends reify.Passage
-	{
-		generate()
-		{
-			if (reshuffle)
-			{
-				super.generate()
-				var {value:random,seed}=reify.util.random(this._seed)
-				this._seed=seed
-				this.results=reify.util.shuffle(this.results,random).result
-				reshuffle=false
-			}
-			this.text=this.toString()
-			return this.results
-		}
-		
-		fill(literals, ...expressions)
-		{
-			super.fill(literals, ...expressions)
-			reshuffle=true
-		}
-		reset()
-		{
-			super.reset()
-			reshuffle=true
-			return this
-		}
-		
-	}(...data)
-})
-
-reify.template.define("pin").as((...data)=>
-{
-	var pin =true
-	return new class pinPassage extends reify.Passage
-	{
-		fill(literals, ...expressions)
-		{
-			super.fill(literals, ...expressions)
-			pin =true
-			return this
-		}
-		generate()
-		{
-			if (pin)
-			{
-				super.generate()
-				pin=false
-			}
-			
-			return this.results
-		}
-		reset()
-		{
-			if(pin)
-			{
-				super.reset()
-			}
-		}
-	}(...data)
-})
-reify.template.define("spc").as((...precursor)=>
-{
-	return new class spacePassage extends reify.Passage
-	{
-		generate()
-		{
-			super.generate()
-			
-			this.text=this.toString()
-			
-			if (this.text!==""){var space=" "}
-			else{var space=""}
-			this.results.unshift({value:space})
-			this.text=space+this.text
-			
-			return this.results
-		}
-	}(...precursor)
-})
-
-reify.template.define("next").as(function next(precursor)
-{
-	precursor.echo=false
-	return precursor
-})
-
-
+        if (reify.suffix.hasOwnProperty(property))
+        {
+            target.suffix.push(reify.suffix[property])
+            return receiver //might be another suffix next
+        }
+        else 
+        {
+            return target[property]
+        }
+	},
+}
+reify._=new Proxy((function(){}),reify.prefixProxy)
 
 
 
@@ -2440,6 +1262,8 @@ reify.tense={imperative:0,present:1, past:2, perfect:3}
 reify._viewpoint=null
 reify.undoLength=10
 reify.lang={}
+reify.prefix={}
+reify.suffix={}
 
 
 /* A turn is a processing of all the episodes on the the storyline.  An episode is a plotpoint.narrate with bound arguments.*/ 
@@ -2540,9 +1364,6 @@ reify.Reality=class Reality
 reify.plot=function plot(){Object.values(reify.plot._fact).forEach((fact)=>reify._update(fact,true))}
 reify.plot._entity={}
 reify.plot._fact={}//{reality:new reify.Reality()} //plot structure where scenes and facts live.
-
-reify.classes={}  //Classes that users might want to extend
-
 reify.proxies={}
 reify.proxies.newless= //instantiate a class without new operator
 {
@@ -2601,7 +1422,7 @@ reify.proxies.entity=
 			description:(literals, ...expressions)=>
 			{
 				if(literals===undefined) return target.description
-				target.description=reify.template._(literals,...expressions)
+				target.description=reify._(literals,...expressions)
 				return receiver
 			},
 			
@@ -2691,7 +1512,7 @@ reify.classes.entity=class Entity
             Object.defineProperties(this,
                 {
                     id:{value:reify.formatId(name),enumerable:false},
-                    description:{value:reify.template._,enumerable:false,writable:true},
+                    description:{value:"",enumerable:false,writable:true},
                     name:{value:reify.formatName(name),enumerable:false,writable:true},
                     attributive:{value:false,enumerable:false,writable:true},
                     _indexes:{value:[],enumerable:false,writable:false},
@@ -2927,19 +1748,20 @@ reify.classes.Scene=class Scene
         return this
     }
 
-    storyline(index=0,mise=true)
+    storyline(index=0)
     {
-        if (mise) return this.storylines[index].fill(...this.mise.map(row=>row.entity))??reify._``
         return this.storylines[index]??reify._``
     }
 
     _(literals,...expressions)
     {
-        this.storylines.push(reify._(literals,...expressions))
+        const storyline=reify._(literals,...expressions)
+        storyline.setScene(this)
+        this.storylines.push(storyline)
         return this
     }
 
-    unfolding(aFunction)
+    unfolding(aFunction) 
     {
         this.unfold=aFunction.bind(undefined,this)
         return this
@@ -2947,74 +1769,7 @@ reify.classes.Scene=class Scene
 }
 
 
-reify.classes.Storyline =class Storyline
-{
-	constructor(...data) 
-	{
-        Object.defineProperties(this,
-        {
-            id:{value:"",writable:true},
-		    prefix:{value:false,writable:true},
-		    storylines:{value:[].concat(data),writable:true},
-            results:{value:[],writable:true},
-            text:{value:"",writable:true}
-        })
-        
-        return new Proxy(this,reify.storylineHandler)
-    }
-    get a()
-    {
 
-    }
-    fill()
-    {
-        //if array 
-        //if object
-        
-
-        return this
-    }
-    say()
-    {
-        this.generate()
-        return this
-    }
-    generate()
-	{
-		this.results=[]
-		this.storylines.forEach((storyline)=>
-		{
-			if (storyline.generate){this.results=this.results.concat(storyline.generate())}
-			else {this.results.push(storyline)}
-		})
-		this.text=this.toString()
-		return this.results
-	}
-    tag(tagId)
-    {
-        this.id=tagId
-        return this
-    }
-    get text(){return}
-    toString()
-	{
-		return this.results.map(result=>
-		{	
-			if (result===undefined){return ""}
-			if (Object.getPrototypeOf(result)===Object.prototype)
-			{
-				if ( result.hasOwnProperty("name"))
-				{
-					return result.name
-				}
-                else return (Object.values(result)[0]).toString
-
-			}            
-            return (result).toString()
-		}).join("")	
-	}
-    
-}
 
 
 
