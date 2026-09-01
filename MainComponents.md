@@ -13,7 +13,17 @@
 https://en.wikipedia.org/wiki/Semantic_network
 
 
-Reify.js is a JavaScript is a library for writing interactive fiction (also known as text adventures).  With Reify, you describe the story world with facts and write scenes that respond whenever the facts change.
+Reify.js is a JavaScript framework for writing interactive fiction (also known as text adventures) that run in a web browser. It is currently under development with a pre-alpha release of code expected January 2026.
+
+
+
+With Reify, you describe your story world with facts about it and write scenes that respond when those facts change.
+
+player input --> fact change (reify.now)--> scene --> subplot,optional | fact change --> scene
+
+
+
+
 
 Facts describe how two or more story elements relates relate to each other. Here are some facts which describe the story world in the Cloak of Darkness:
 

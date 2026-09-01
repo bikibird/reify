@@ -1259,3 +1259,54 @@ scene`[someone] will carry {something]`
     this.mise.check((term)=>term.someone!==term.something).now`${term.someone} cannot carry themselves.`
 })
 
+
+
+I've made some decent progress on my new JavaScript framework for developing IF called Reify.  While I'm not ready to release it yet, I am ready to talk about the concepts behind and to share a little about what it's like to code with Reify now that the design has solidified more. 
+
+Reify is a rule system based on predicate logic.  It takes a declarative approach to coding using a fluent-style interface somewhat reminiscent of jQuery.
+
+With reify you declare the story elements that are the persons, places, things, concepts, and traits that make your story world unique. 
+```JavaScript
+//This is all valid JavaScript code, but it reads like a custom scripting language
+reify`player`
+ .kind`person`
+ .description`a weary traveler looking for a drink`
+
+reify`cloak`.kind`thing`
+ .description`a cloak made of the deepest, blackest black imaginable`
+
+reify`foyer
+ `.kind`room`
+ .description`the foyer of the grand opera house.`
+```
+
+You then declare facts to describe how the story elements connect to one another
+```JavaScript
+//text inside facts is a highly structure DSL that reads almost like English. 
+reify.facts`foyer contains player. player wears cloak. foyer is south of bar.`
+```
+
+If the predicates that are included in the starter kit aren't sufficient, you can define your own.
+```JavaScript
+predicate`knows`.converse`be known by`
+```
+predicates are n-ary and support any number of preposition connecting any number of elements. 
+
+Scenes are triggered with facts change.  
+```JavaScript
+reify.scene`when player will drop [something] `
+._`Dropped.`
+ .unfolding((scene,subplot)=>
+    {
+       scene.now`player does not carry [something]. player does not wear [something]. [something] `
+
+      //  console.log("unfold")
+      //  console.log(subplot)
+      //  console.log(scene.mise)
+       // return reify._`this is the player carries something scene. ${scene.now`[something] is shiny.`}`
+       return reify._`This is the player carries something scene. ${scene.now`[something] is shiny.`}`
+    
+    })
+```
+
+By the way, no LLMs were used in the crafting of code for this system. Progress has been slow and steady.  I hope to release a pre-alpha version in January 2027.

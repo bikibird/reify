@@ -8,11 +8,11 @@ reify.Passage =class Passage
 		Object.defineProperty(this,"id",{value:"",writable:true})
         Object.defineProperty(this,"scene",{value:null,writable:true})
         Object.defineProperty(this,"mise",{value:false,writable:true})
-		Object.defineProperty(this,"prefixes",{value:[],writable:true})
+		Object.defineProperty(this,"prefix",{value:[],writable:true})
 		Object.defineProperty(this,"passages",{value:[],writable:true})
 		Object.defineProperty(this,"results",{value:[],writable:true})
 		//Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
-        Object.defineProperty(this,"suffixes",{value:[],writable:true})
+        Object.defineProperty(this,"suffix",{value:[],writable:true})
 		Object.defineProperty(this,"text",{value:"",writable:true})
 		this.fill(...items)
 
@@ -31,28 +31,36 @@ reify.Passage =class Passage
 	//console.log(_.scene`hello, ${_.something.name()}. `)
 	generate(row)
 	{
-        let loop=1
+        let loop=1,results=[]
         if (mise) loop=this.scene.mise.length
         for(let i=0;i<loop;i++)
         {
-            if (mise) row=this.scene.mise[i]
-            passages.forEach((passage)=>
+            if (mise) row=this.scene.mise[i].entity
+            if (this.entity)
             {
-                if (passage.generate) 
+                if (this.attribute) results.push(row[this.entity][this.attribute])
+                else results.push(row[this.entity].name)
+            }
+            else
+            {
+                passages.forEach((passage)=>
                 {
-                    this.results=this.results.concat(passage.generate(row))
-                }
-                else 
-                {
-                    this.results.push((passage).toString())
-                }
-            })
-            this.prefixes.forEach(prefix=>
+                    if (passage.generate) 
+                    {
+                        this.results=this.results.concat(passage.generate(row))
+                    }
+                    else 
+                    {
+                        this.results.push((passage).toString())
+                    }
+                })
+            }
+            this.prefix.forEach(prefix=>
             {
                 this.results= prefix(this.results,row)
             })
 
-            this.suffixes.forEach(suffix=>
+            this.suffix.forEach(suffix=>
             {
                 this.results = suffix(results)
             })
@@ -235,7 +243,9 @@ reify.prefixProxy=
         if (target.erstatz) //another prefix to process
         {
             if (property="scene") target.mise=true
-            else target.prefixes.unshift(reify.prefixes[property])
+            else if (reify.prefix[property]) target.prefix.unshift(reify.prefix[property])
+            else if (!target.entity)target.entity=property
+            else target.attribute=property
             return receiver
         }
        
@@ -245,7 +255,9 @@ reify.prefixProxy=
             const erstatzPassage =function(){}
             erstatzPassage.erstatz=true
             if (property="scene") erstatzPassage.mise=true
-            else erstatzPassage.prefixes=[reify.prefixes[property]]
+            else if (reify.prefix[property]) erstatzPassage.prefix=[reify.prefix[property]]
+            else if (!erstatzPassage.entity)erstatzPassage.entity=property
+            else erstatzPassage.attribute=property
             return new Proxy(erstatzPassage,reify.prefixProxy)
         }
 	
@@ -253,7 +265,7 @@ reify.prefixProxy=
     apply: function(target, thisArg, args)
     {
         const passage=new reify.Passage(args)    
-        passage.prefixes=target.prefixes ?? []
+        passage.prefix=target.prefix ?? []
         passage.mise=target.mise
         return new Proxy(passage,reify.suffixProxy)
     }
@@ -262,9 +274,9 @@ reify.suffixProxy=
 {
 	get: function(target, property,receiver) 
 	{
-        if (reify.suffixes.hasOwnProperty(property))
+        if (reify.suffix.hasOwnProperty(property))
         {
-            target.suffixes.push(reify.suffixes[property])
+            target.suffix.push(reify.suffix[property])
             return receiver //might be another suffix next
         }
         else 
@@ -275,7 +287,7 @@ reify.suffixProxy=
 }
 reify._=new Proxy((function(){}),reify.prefixProxy)
 
-reify.prefixes=
+reify.prefix=
 {
     a:function(passages)
     {   
@@ -306,7 +318,7 @@ reify.prefixes=
         return results
     }
 }
-reify.suffixes=
+reify.suffix=
 {
     d:function(passages)
     {   
