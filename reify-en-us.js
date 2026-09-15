@@ -673,29 +673,39 @@ reify.prefix.a=(results,entity)=>
 {
     results=results.map(result=>
     {
-        if (entity?.proper)
+        if (entity?.proper())
         {
             return result
         }
-        else if(entity?.number==reify.lang.number.plural)
+        else if(entity?.number()==reify.lang.number.plural)
         {
             return `some ${result}`
         }
         else
         {
             {
-                return reify.lang.a(result)
+                return `${reify.lang.a(result)} ${result}`
             }
         }
     })
+    return results
 }
 reify.prefix.A=(results,entity)=>
 {
-    return reify.lang.capitalize(reify.prefix.a(results,entity))
+    return reify.prefix.a(results,entity).map(result=>reify.lang.capitalize(result))
 }
 reify.prefix.an=reify.prefix.a
 reify.prefix.An=reify.prefix.A
 reify.prefix.some=reify.prefix.a
 reify.prefix.Some=reify.prefix.A
+
+// #endregion
+
+// #region suffixes
+
+reify.suffix.ed=(results)=>results.map(result=>reify.lang.ed(result))
+reify.suffix.en=(results)=>results.map(result=>reify.lang.en(result))
+
+
 
 // #endregion

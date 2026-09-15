@@ -8,7 +8,7 @@
        <script src="reify.js"></script>
        <script src="reify-en-us.js"></script>
        <script>
-     //   const { predicate, facts, scene,now,_} = reify
+       const { predicate, facts, scene,now,_} = reify
  
        // predicate`give to`
         reify.predicate`carry`.converse`be carried by`
@@ -37,7 +37,7 @@
 
         reify`foyer`.display`Foyer of the Opera House`.aka`entryway`
             .kind`room`
-            .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
+      //      .description`You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.`
         reify`shiny`
 
 
@@ -46,28 +46,30 @@
 //reify.select`player carries shiny or dull ring.`
 
 reify.scene`when player carries [something]`
+    ._`The player ${_`carry`.ed} ${_.a.scene.something()}. ` //storyline: passage bound to scene
     .unfolding((scene,subplot)=>
     {
       //  console.log("unfold")
       //  console.log(subplot)
-      //  console.log(scene.mise)
+      // console.log(scene.mise)
+      //    console.log(this)
        // return reify._`this is the player carries something scene. ${scene.now`[something] is shiny.`}`
-       return reify._`This is the player carries something scene. ${scene.now`[something] is shiny.`}`
-    
+        return scene.storyline()
     })
 
-reify.scene`when [something] is shiny`
-    ._`The ${reify._.$something.name()} is shiny.`
+/*reify.scene`when [something] is shiny`
+    ._`The ${_.$something.name()} is shiny.`
     .unfolding((scene,subplot)=>
     {
       //  console.log("unfold")
       //  console.log(subplot)
       //  console.log(scene.mise)
        // return reify._`this is the player carries something scene. ${scene.now`[something] is shiny.`}`
+    
        return scene.storyline() //applies mise to storyline 
     
     })
-
+*/
 reify.plot() //sorts facts into scenes
 reify.now`player carries ring.` //trigger plot line
 /*

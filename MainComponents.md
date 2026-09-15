@@ -944,6 +944,27 @@ ERROR 0010: Wildcard not permitted for target. Fact ${index+1}:"${fact.lexeme}."
 ERROR 0011: Wildcard not permitted. Fact ${index+1}:"${fact.lexeme}."
 
 
+scene.`when player gives [verb] [something] to [someone]`
+
+_.`${_.You.scene.player()} ${_.scene.not.verb().es} ${_.the.scene.something()} ${_.verb(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.verb().en} ${_.the.scene.something()} ${_.verb(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.verb().ed} ${_.the.scene.something()} ${_.verb(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.verb().ing} ${_.the.scene.something()} ${_.verb(1)} ${scene.someone()}. `
 
 
+scene.`when player gives [pred] [something] to [someone]`
+_.`${_.You.scene.player()} ${_.scene.not.pred().es} ${_.the.scene.something()} ${_.pred(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.pred().en} ${_.the.scene.something()} ${_.pred(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.pred().ed} ${_.the.scene.something()} ${_.pred(1)} ${scene.someone()}. `
+_.`${_.You.scene.player()} ${_.scene.not.pred().ing} ${_.the.scene.something()} ${_.pred(1)} ${scene.someone()}. `
 
+scene.`when player carries [have] [something] or when player wears [have] [something]`
+_.`${_.You.scene.player()} ${_.scene.not.have().es} ${_.the.scene.something()}. `
+_.`${_.You.scene.player()} ${_.scene.not.have()}.en ${_.the.scene.something()}. `
+_.`${_.You.scene.player()} ${_.scene.not.have().ed} ${_.the.scene.something()}. `
+_.`${_.You.scene.player()} ${_scene.not.have().ing} ${_.the.scene.something()}. `
+_.`${_.You.scene.player()} ${_.scene.not.have()} ${_.the.scene.something()}. `
+
+
+scene.`when player is [is_comfort] cold and player is alone.`
+_._.`${_.You.scene.player()} ${_.scene.not.have().es} ${_.the.scene.something()}. `
