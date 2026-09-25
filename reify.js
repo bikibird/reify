@@ -928,7 +928,7 @@ reify.classes.Passage =class Passage
 		Object.defineProperty(this,"prefix",{value:[],writable:true})
 		Object.defineProperty(this,"passages",{value:[],writable:true})
 		Object.defineProperty(this,"results",{value:[],writable:true})
-		//Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
+		Object.defineProperty(this,"_seed",{value:reify.util.random().seed,writable:true})
         Object.defineProperty(this,"suffix",{value:[],writable:true})
 		Object.defineProperty(this,"text",{value:"",writable:true})
 		this.fill(literals,...expressions)
@@ -1003,13 +1003,7 @@ reify.classes.Passage =class Passage
 					{
 						data=literals //avoid wrapping array in array because (a,b,c) is equivalent notation to [a,b,c]
 					}
-					else //_fill("blah") or _fill(), _fill({properties}) _fill(x=>blah)
-					{
-						if(literals)
-						{	
-							data=[literals]
-						}
-					}
+					else data=[literals]//_fill("blah") or _fill(), _fill({properties}) _fill(x=>blah)
 				}
 			}
 		}				
@@ -1019,7 +1013,7 @@ reify.classes.Passage =class Passage
 			{
 				//if (passage===undefined || passage === null){return ""}
 				var passageType=typeof passage
-				if(passageType==="string" ||Object.getPrototypeOf(passage)===Object.prototype || passage.generate || passageType==="function" )
+				if(passageType==="string"|| passageType==="number" ||Object.getPrototypeOf(passage)===Object.prototype || passage.generate || passageType==="function" )
 				{return passage}
 
 				return passage.toString()
@@ -1031,16 +1025,24 @@ reify.classes.Passage =class Passage
 	//console.log(_.scene`hello, ${_.something.name()}. `)
 	generate(row)
 	{
-        let loop=1,results=[],entity
+        let loop=1,results=[],wildcard
         if (this.mise) loop=this.scene.mise.length
         for(let i=0;i<loop;i++)
         {
-            if (this.mise) row=this.scene.mise[i].entity
-            if (this.entity)
+            if (this.mise) row=this.scene.mise[i].wildcard
+            if (this.wildcard)
             {
-                entity=row[this.entity]
-                if (this.attribute) results.push(entity[this.attribute]())
-                else results.push(entity.name())
+                wildcard=row[this.wildcard]
+                if (this.attribute) results.push(wildcard[this.attribute]())
+                else
+                {
+                    if (wildcard instanceof reify.classes.Predicate) 
+                    {
+                        if (this.passages.length===0) results.push(wildcard.verb)
+                        else results.push(wildcard.prepositions[this.passages[0]] ?? "")
+                    }
+                    else results.push(wildcard.name())
+                }
             }
             else
             {
@@ -1059,12 +1061,12 @@ reify.classes.Passage =class Passage
             }
             this.prefix.forEach(prefix=>
             {
-                results= prefix(results,entity)
+                results= prefix(results,wildcard)
             })
 
             this.suffix.forEach(suffix=>
             {
-                results = suffix(results,entity)
+                results = suffix(results,wildcard)
             })
         }
         
@@ -1172,30 +1174,27 @@ reify.prefixProxy=
         {
             if (property==="scene") target.mise=true
             else if (reify.prefix[property]) target.prefix.unshift(reify.prefix[property])
-            else if (!target.entity)target.entity=property
+            else if (!target.wildcard)target.wildcard=property
             else target.attribute=property
             return receiver
         }
-       
         else //first prefix
         {
-
-            const erstatzPassage =function(){}
+            const erstatzPassage =new Function()
             erstatzPassage.erstatz=true
             if (property==="scene") erstatzPassage.mise=true
             else if (reify.prefix[property]) erstatzPassage.prefix=[reify.prefix[property]]
-            else if (!erstatzPassage.entity)erstatzPassage.entity=property
+            else if (!erstatzPassage.wildcard)erstatzPassage.wildcard=property
             else erstatzPassage.attribute=property
             return new Proxy(erstatzPassage,reify.prefixProxy)
         }
-	
 	},
     apply: function(target, thisArg, args)
     {
         const passage=new reify.classes.Passage(...args)    
         passage.prefix=target.prefix ?? []
         passage.mise=target.mise
-        passage.entity=target.entity
+        passage.wildcard=target.wildcard
         passage.attribute=target.attribute
         return new Proxy(passage,reify.suffixProxy)
     }
@@ -1816,20 +1815,22 @@ reify.dsl.argument[2].snip("wildcard",reify.dsl.wildcard)
 reify.dsl.preposition=reify.Syntax().configure({filter:(definition)=>definition?.part==="preposition"})
 
 reify.dsl.prepositionalPhrase=reify.Syntax().configure({minimum:0, maximum:Infinity})
-    .snip("target",reify.dsl.argument).snip("preposition",reify.dsl.preposition)
-reify.dsl.verb=reify.Syntax().configure({filter:(definition)=>definition?.part==="verb"})	
+    .snip("preposition",reify.dsl.preposition).snip("target",reify.dsl.argument)
+reify.dsl.verb=reify.Syntax().configure({filter:(definition)=>definition?.part==="verb", semantics:interpretation=>
+    {
+        return true
+
+    }})	
 reify.dsl.predicate=reify.Syntax()
     .snip(0)
     .snip(1)
-    .snip(2)
     .configure({mode:reify.Syntax.any,semantics:(interpretation)=>
         {
-            console.log(interpretation)
             return true
         }})
 reify.dsl.predicate[0].snip("verb",reify.dsl.verb).snip("wildcard",reify.dsl.wildcard)
 reify.dsl.predicate[1].snip("verb",reify.dsl.verb)
-reify.dsl.predicate[2].snip("wildcard",reify.dsl.wildcard)
+
 
 
 
@@ -1861,7 +1862,7 @@ reify.dsl.statements.statement=reify.Syntax()
         let verb=gist.verb.definition
         let predicate=verb.predicate
         
-        let prepositions=(gist.prepositionalPhrase??[]).map(preposition=>preposition.definition.key)
+        let prepositions=(gist.prepositionalPhrase??[]).map(gist=>gist.preposition.definition.key)
         //do prepositions match predicate?
         if (prepositions.length !== predicate.prepositions.length) return false 
         prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
@@ -1908,7 +1909,7 @@ reify.dsl.statements.statement=reify.Syntax()
     directObject => argument
     target => argument
     argument => entity wildcard | entity | wildcard
-    predicate => verb wildcard | verb | wildcard 
+    predicate => verb wildcard | verb 
     //`(player [someone] carries lamp [something] or nancy [someone] carries [something]) and [something] is shiny`
    // No: union operator: +, difference operator: -, intersection operator: * because code switching bad for cognitive load.
 */
@@ -1925,10 +1926,11 @@ reify.dsl.atom=reify.Syntax()
         const directObject=pattern.directObject
         const verb=pattern.predicate.verb.definition
         const match=pattern.predicate.wildcard?.definition.match
+
         const {predicate,converse,polarity,tense,}=verb
-        if (match) wildcard[match.slice(1,-1)]=verb
-        else wildcard[predicate.verb]=verb
-        let prepositions=(pattern.prepositionalPhrase ?? []).map(preposition=>preposition.definition.key)
+        
+
+        let prepositions=(pattern.prepositionalPhrase ?? []).map(gist=>gist.preposition.definition.key)
         //do prepositions match predicate?
         if (prepositions.length !== predicate.prepositions.length) return false 
         prepositions.forEach((preposition,index)=>{if(preposition!==predicate.prepositions[index]) return false})
@@ -2014,16 +2016,20 @@ while reality is the main reality
             const selection=[]
             subplot.reality.forEach(fact=>
             {
-                const row={entity:{},reasoning:[fact]}
+                const row={wildcard:{},reasoning:[fact]}
                 for (const [key, index] of Object.entries(wildcard)) 
                 {
-                    row.entity[key]=fact.entities[index]  
+                    row.wildcard[key]=fact.entities[index]  
                 }
+                fact.entities.forEach(entity=>row.wildcard[entity.id]??=entity)
+                if (match) row.wildcard[match.slice(1,-1)]??=predicate
+                else row.wildcard[predicate.verb]??=predicate
                 selection.push(row)
             })
-            return  selection //[{entity,reasoning}]
+           return  selection //[{entity,reasoning}]
         }
         //interpretation.gist==={subplots[subplot],specificity:specificity,selector:selector}
+
         return true
         
     }})
@@ -2034,7 +2040,7 @@ reify.dsl.atom.pattern=reify.Syntax()
     .snip("subject",reify.dsl.argument).snip("predicate",reify.dsl.predicate).snip("directObject",reify.dsl.argument).snip("prepositionalPhrase",reify.dsl.prepositionalPhrase)
     .configure({semantics:interpretation=> //Due to wildcards, each statement may involve multiple facts.  
     {  
-        console.log(interpretation)
+        
         return true
     }})
 reify.dsl.term=reify.Syntax()

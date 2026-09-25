@@ -669,15 +669,15 @@ reify.parser=reify.Parser({ lexicon: reify.glossary, grammar: reify.grammar.comm
 // #endregion
 // #region prefixes
 
-reify.prefix.a=(results,entity)=>
+reify.prefix.a=(results,wildcard)=>
 {
     results=results.map(result=>
     {
-        if (entity?.proper())
+        if (wildcard?.proper())
         {
             return result
         }
-        else if(entity?.number()==reify.lang.number.plural)
+        else if(wildcard?.number()==reify.lang.number.plural)
         {
             return `some ${result}`
         }
@@ -690,9 +690,9 @@ reify.prefix.a=(results,entity)=>
     })
     return results
 }
-reify.prefix.A=(results,entity)=>
+reify.prefix.A=(results,wildcard)=>
 {
-    return reify.prefix.a(results,entity).map(result=>reify.lang.capitalize(result))
+    return reify.prefix.a(results,wildcard).map(result=>reify.lang.capitalize(result))
 }
 reify.prefix.an=reify.prefix.a
 reify.prefix.An=reify.prefix.A

@@ -966,5 +966,14 @@ _.`${_.You.scene.player()} ${_scene.not.have().ing} ${_.the.scene.something()}. 
 _.`${_.You.scene.player()} ${_.scene.not.have()} ${_.the.scene.something()}. `
 
 
-scene.`when player is [is_comfort] cold and player is alone.`
-_._.`${_.You.scene.player()} ${_.scene.not.have().es} ${_.the.scene.something()}. `
+scene.`when player gives [give] [something] to [someone]`
+__.`${_.You.scene.player()} ${_.scene.give().es} ${_.the.scene.something()} ${_.scene.give.prep(0)} ${_.the.scene.someone()}. `
+
+
+scene.`shortest path from player [giver] to ring, alice via gave to_, took from historically weighted by giver income`
+
+
+._`The player ${_.scene.carry().ed} ${_.a.scene.something()}. ` // carry() returns verb
+    ._`The player ${_.scene.carry(0).ed} ${_.a.scene.something()}. ` //carry() returns first preposition
+    ._`The player ${_.scene.carry(1).ed} ${_.a.scene.something()}. ` //carry() returns second preposition
+
