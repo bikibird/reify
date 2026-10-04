@@ -1036,10 +1036,10 @@ reify.classes.Passage =class Passage
                 if (this.attribute) results.push(wildcard[this.attribute]())
                 else
                 {
-                    if (wildcard instanceof reify.classes.Predicate) 
+                    if (wildcard.predicate instanceof reify.classes.Predicate) 
                     {
-                        if (this.passages.length===0) results.push(wildcard.verb)
-                        else results.push(wildcard.prepositions[this.passages[0]] ?? "")
+                        if (this.passages.length===0) results.push(wildcard.predicate.verb)
+                        else results.push(wildcard.predicate.prepositions[this.passages[0]] ?? "")
                     }
                     else results.push(wildcard.name())
                 }
@@ -1173,6 +1173,7 @@ reify.prefixProxy=
         if (target.erstatz) //another prefix to process
         {
             if (property==="scene") target.mise=true
+            else if (property==="scene") target.polarity=true
             else if (reify.prefix[property]) target.prefix.unshift(reify.prefix[property])
             else if (!target.wildcard)target.wildcard=property
             else target.attribute=property
@@ -1183,6 +1184,7 @@ reify.prefixProxy=
             const erstatzPassage =new Function()
             erstatzPassage.erstatz=true
             if (property==="scene") erstatzPassage.mise=true
+            else if (property==="polarity") erstatzPassage.polarity=true
             else if (reify.prefix[property]) erstatzPassage.prefix=[reify.prefix[property]]
             else if (!erstatzPassage.wildcard)erstatzPassage.wildcard=property
             else erstatzPassage.attribute=property
@@ -1194,6 +1196,7 @@ reify.prefixProxy=
         const passage=new reify.classes.Passage(...args)    
         passage.prefix=target.prefix ?? []
         passage.mise=target.mise
+        passage.polarity=target.polarity
         passage.wildcard=target.wildcard
         passage.attribute=target.attribute
         return new Proxy(passage,reify.suffixProxy)
@@ -1203,7 +1206,12 @@ reify.suffixProxy=
 {
 	get: function(target, property,receiver) 
 	{
-        if (reify.suffix.hasOwnProperty(property))
+        if(property==="tense")
+        {
+            target.tense=true
+            return receiver
+        }
+        else if (reify.suffix.hasOwnProperty(property))
         {
             target.suffix.push(reify.suffix[property])
             return receiver //might be another suffix next
@@ -1244,16 +1252,7 @@ reify.Token.prototype.clone=function()
 }
 // #endregion
 // #endregion
-// #region viewpoint
-reify.viewpoint=function(actor)
-{
-	if(actor)
-	{
-		this._viewpoint=actor
-	}	
-	return this._viewpoint
-}
-// #endregion
+
 reify.clock=new Date()
 reify.interval= 60000  //1 minute
 reify.turn=1
@@ -1605,48 +1604,9 @@ reify.classes.Predicate=class Predicate
 	}
     #conjugate(verb,converse)
     {
-        let particles=verb.split(" ")
-        if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" or passive constructions for example 
-        {
-            let complement=" "+particles.slice(1).join(" ")
-            if (particles.length===1)complement=""
-            
-            reify.glossary.register("is"+complement)//foyer is north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
-            reify.glossary.register("are"+complement)//trees are north of meadow
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("are not"+complement)//trees are not north of meadow
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
-            reify.glossary.register("was"+complement)//foyer was north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("was not"+complement)//foyer was north of cloakroom
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse})
-            reify.glossary.register("were"+complement)//trees were north of meadow
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("were not"+complement)//trees were not north of meadow
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse}) 
-        }
-        else
-        {
-            
-            reify.glossary.register(reify.lang.es(verb)). //player carries ring
-                as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("does not "+verb) //player does not carry ring
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
-            reify.glossary.register(verb) //people carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("do not "+verb) //people do not carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.present,polarity:reify.negative,converse:converse})
-            reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.affirmative,converse:converse})
-            reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
-                .as({part:"verb",predicate:this,tense:reify.past,polarity:reify.negative,converse:converse})
-
-        }
-
+        reify.lang.conjugatePredicate(this,verb,converse)
         return this
+        
     }
 	
     converse(literals, ...expressions)
@@ -1927,7 +1887,7 @@ reify.dsl.atom=reify.Syntax()
         const verb=pattern.predicate.verb.definition
         const match=pattern.predicate.wildcard?.definition.match
 
-        const {predicate,converse,polarity,tense,}=verb
+        const {predicate,converse,polarity,tense}=verb
         
 
         let prepositions=(pattern.prepositionalPhrase ?? []).map(gist=>gist.preposition.definition.key)
@@ -2022,8 +1982,8 @@ while reality is the main reality
                     row.wildcard[key]=fact.entities[index]  
                 }
                 fact.entities.forEach(entity=>row.wildcard[entity.id]??=entity)
-                if (match) row.wildcard[match.slice(1,-1)]??=predicate
-                else row.wildcard[predicate.verb]??=predicate
+                if (match) row.wildcard[match.slice(1,-1)]??={predicate:predicate,polarity:polarity,tense:tense}
+                else row.wildcard[predicate.verb]??={predicate:predicate,polarity:polarity,tense:tense}
                 selection.push(row)
             })
            return  selection //[{entity,reasoning}]

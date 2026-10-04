@@ -62,53 +62,52 @@ the player who carries _anything_ endangers the plan=>endanger: player, plan
 */
 
 
-reify.lang.conjugatePredicate=(predicate,voice)=>
-{   
-    let verb=predicate.verb
-	let particles=verb.split(" ")
-	if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" for example 
-	{
+reify.lang.conjugatePredicate(predicate,verb,converse)
+    {
+        let particles=verb.split(" ")
+        if (particles[0].slice(0,2) ==="be")  //conjugate "be north of" or passive constructions for example 
+        {
+            let complement=" "+particles.slice(1).join(" ")
+            if (particles.length===1)complement=""
 
-		let complement=" "+particles.slice(1).join(" ")
-        reify.glossary.register("is"+complement)//foyer is north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
-        reify.glossary.register("are"+complement)//trees are north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("are not"+complement)//trees are not north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
-        reify.glossary.register("was"+complement)//foyer was north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("was not"+complement)//foyer was north of cloakroom
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice})
-        reify.glossary.register("were"+complement)//trees were north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("were not"+complement)//trees were not north of meadow
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice}) 
-	}
-	else
-	{
-        
-        reify.glossary.register(reify.lang.es(verb)). //player carries ring
-            as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("does not "+verb) //player does not carry ring
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
-        reify.glossary.register(verb) //people carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,voice:voice})
-        reify.glossary.register("do not "+verb) //people do not carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,voice:voice})
-        reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative})
-        reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
-            .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,voice:voice})
+            //DEFECT need to add person and also am/am not is missing
+            
+            reify.glossary.register("is"+complement)//foyer is north of cloakroom
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,converse:converse,number:reify.lang.number.singular})
+            reify.glossary.register("is not"+complement)//foyer is not north of cloakroom
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,converse:converse,number:reify.lang.number.singular})
+            reify.glossary.register("are"+complement)//trees are north of meadow
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,converse:converse,number:reify.lang.number.plural})
+            reify.glossary.register("are not"+complement)//trees are not north of meadow
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,converse:converse,number:reify.lang.number.plural})
+            reify.glossary.register("was"+complement)//foyer was north of cloakroom
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,converse:converse,number:reify.lang.number.singular})
+            reify.glossary.register("was not"+complement)//foyer was north of cloakroom
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,converse:converse,number:reify.lang.number.singular})
+            reify.glossary.register("were"+complement)//trees were north of meadow
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,converse:converse,number:reify.lang.number.plural})
+            reify.glossary.register("were not"+complement)//trees were not north of meadow
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,converse:converse,number:reify.lang.number.plural}) 
+        }
+        else
+        {
+            
+            reify.glossary.register(reify.lang.es(verb)). //player carries ring
+                as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,converse:converse})
+            reify.glossary.register("does not "+verb) //player does not carry ring
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,converse:converse})
+            reify.glossary.register(verb) //people carry treasure chest
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.affirmative,converse:converse})
+            reify.glossary.register("do not "+verb) //people do not carry treasure chest
+                .as({part:"verb",predicate:predicate,tense:reify.present,polarity:reify.negative,converse:converse})
+            reify.glossary.register(reify.lang.ed(verb)) //player carried ring. people carried treasure chest
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.affirmative,converse:converse})
+            reify.glossary.register("did not "+verb) //player did not carry ring. people did not carry treasure chest
+                .as({part:"verb",predicate:predicate,tense:reify.past,polarity:reify.negative,converse:converse})
+
+        }
 
     }
-
-
-
-
-}
 
 reify.lang.conjugatePassive=(verb,predicate)=>
 {
@@ -152,12 +151,19 @@ reify.tense=reify.lang.voice=reify.lang.active //DEFECT REMOVE
 reify.lang.pronouns=
 {
 	
-  epicene:{subjective:["I","you","they"],objective:["me","you","them"],reflexive:["myself","yourself","themself"],possessive:["mine","yours","theirs"]},
-  female:{subjective:["I","you","she"],objective:["me","you","her"],reflexive:["myself","yourself","herself"],possessive:["mine","yours","hers"]},
-  male:{subjective:["I","you","he"],objective:["me","you","him"],reflexive:["myself","yourself","hisself"],possessive:["mine","yours","his"]},
-  neuter:{subjective:["I","you","it"],objective:["me","you","it"],reflexive:["myself","yourself","itself"],possessive:["mine","yours","its"]},
-  plural:{subjective:["we","you","they"],objective:["us","you","them"],reflexive:["ourself","yourself","themselves"],possessive:["ours","yours","theirs"]}
+  epicene:{subjective:["I","you","they"],objective:["me","you","them"],reflexive:["myself","yourself","themselves"],possessive:["mine","yours","theirs"], possessiveAdjective:["my","your","their"]},
+  female:{subjective:["I","you","she"],objective:["me","you","her"],reflexive:["myself","yourself","herself"],possessive:["mine","yours","hers"],possessiveAdjective:["my","your","her"]},
+  male:{subjective:["I","you","he"],objective:["me","you","him"],reflexive:["myself","yourself","hisself"],possessive:["mine","yours","his"],possessiveAdjective:["my","your","his"]},
+  neuter:{subjective:["I","you","it"],objective:["me","you","it"],reflexive:["myself","yourself","itself"],possessive:["mine","yours","its"],possessiveAdjective:["my","your","its"]},
+  plural:{subjective:["we","you","they"],objective:["us","you","them"],reflexive:["ourself","yourself","themselves"],possessive:["ours","yours","theirs"],possessive:["our","your","their"]}
 }
+//_.scene.actor.I .we  -- first person subjective
+//_.scene.actor.you -- second person subjective
+//_.scene.actor.he .she .they .singular_they -- third person subjective
+
+//_.scene.actor.me us --first person objective case
+//_.scene.actor.thee' -- 2nd person objective
+//_.scene.actor.him .her .them .singular_them --3rd person objective
 //#endregion
 //#region text functions
 reify.lang.preserveCase=function (text, pattern)
@@ -669,22 +675,22 @@ reify.parser=reify.Parser({ lexicon: reify.glossary, grammar: reify.grammar.comm
 // #endregion
 // #region prefixes
 
-reify.prefix.a=(results,wildcard)=>
+reify.prefix.a=(results,term)=>
 {
     results=results.map(result=>
     {
-        if (wildcard?.proper())
+        if (term?.proper())
         {
             return result
         }
-        else if(wildcard?.number()==reify.lang.number.plural)
+        else if(term?.number()==reify.lang.number.plural)
         {
             return `some ${result}`
         }
         else
         {
             {
-                return `${reify.lang.a(result)} ${result}`
+                return `${reify.lang.a(result)} ${result}`.trimEnd()
             }
         }
     })
@@ -698,6 +704,53 @@ reify.prefix.an=reify.prefix.a
 reify.prefix.An=reify.prefix.A
 reify.prefix.some=reify.prefix.a
 reify.prefix.Some=reify.prefix.A
+
+// subjective pronouns I, we, you, they, he, she it
+reify.prefix.I=(results,term)=>{return results.map(result=>`${term.pronouns.subjective[term.viewpoint]} ${result}`.trimEnd())}
+reify.prefix.we=reify.prefix.I
+reify.prefix.you=reify.prefix.I
+reify.prefix.they=reify.prefix.I
+reify.prefix.he=reify.prefix.I
+reify.prefix.she=reify.prefix.I
+reify.prefix.it=reify.prefix.I
+
+// objective pronouns me, us, you (thee), them, him, her, it
+reify.prefix.me=(results,term)=>{return results.map(result=>`${term.pronouns.objective[term.viewpoint]} ${result}`.trimEnd())}
+reify.prefix.us=reify.prefix.me
+reify.prefix.thee=reify.prefix.me
+reify.prefix.them=reify.prefix.me
+reify.prefix.him=reify.prefix.me
+reify.prefix.her=reify.prefix.me
+reify.prefix.hit=reify.prefix.me
+
+// reflexive pronouns
+
+reify.prefix.myself=(results,term)=>{return results.map(result=>`${term.pronouns.reflexive[term.viewpoint]} ${result}`.trimEnd())}
+reify.prefix.ourself=reify.prefix.myself
+reify.prefix.yourself=reify.prefix.myself
+reify.prefix.themselves=reify.prefix.myself
+reify.prefix.himself=reify.prefix.myself
+reify.prefix.herself=reify.prefix.myself
+reify.prefix.itself=reify.prefix.myself
+
+// possessive pronouns
+
+reify.prefix.mine=(results,term)=>{return results.map(result=>`${term.pronouns.possessive[term.viewpoint]} ${result}`.trimEnd())}
+reify.prefix.ours=reify.prefix.mine
+reify.prefix.yours=reify.prefix.mine
+reify.prefix.theirs=reify.prefix.mine
+reify.prefix.his=reify.prefix.mine
+reify.prefix.hers=reify.prefix.mine
+reify.prefix.its=reify.prefix.mine
+
+//possessive adjectives
+reify.prefix.my=(results,term)=>{return results.map(result=>`${term.pronouns.possessiveAdjective[term.viewpoint]} ${result}`.trimEnd())}
+reify.prefix.our=reify.prefix.my
+reify.prefix.your=reify.prefix.my
+reify.prefix.their=reify.prefix.my
+reify.prefix.his=reify.prefix.my
+reify.prefix.her=reify.prefix.my
+reify.prefix.its=reify.prefix.my
 
 // #endregion
 
